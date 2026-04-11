@@ -1,0 +1,12 @@
+# binaries
+/bunny-garden
+/minion-sims
+/periodt
+
+# frontend stuff
+dist/
+node_modules/
+
+# misc
+/nohup.out
+*.out

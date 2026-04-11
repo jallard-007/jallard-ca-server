@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <!-- Arms -->
+  <path d="M 0 92 Q 10 66 50 59" stroke="#F6D018" stroke-width="9" fill="none" stroke-linecap="round"/>
+  <path d="M 100 92 Q 90 66 50 59" stroke="#F6D018" stroke-width="9" fill="none" stroke-linecap="round"/>
+
+  <!-- Hair -->
+  <path d="M 43 3 Q 47 5 45 10" stroke="#131001" stroke-width="3" fill="none" stroke-linecap="round"/>
+  <path d="M 50 2 Q 50 5 50 10" stroke="#131001" stroke-width="3" fill="none" stroke-linecap="round"/>
+  <path d="M 58 3 Q 53 6 53 10" stroke="#131001" stroke-width="3" fill="none" stroke-linecap="round"/>
+
+  <!-- Body -->
+  <rect x="20" y="8" width="60" height="110" rx="20" fill="#F6D018"/>
+  <ellipse cx="50" cy="12" rx="20" ry="5" fill="#F6D018"/>
+
+
+  <!-- Goggle band -->
+  <rect x="19" y="26" width="62" height="16" rx="3" fill="#251c05"/>
+  <!-- Goggle outer rim -->
+  <circle cx="50" cy="34" r="18" fill="#767675"/>
+  <!-- Goggle white -->
+  <circle cx="50" cy="34" r="16" fill="white"/>
+
+  <!-- Iris -->
+  <circle cx="50" cy="34" r="10" fill="#5D3A00"/>
+  <!-- Pupil -->
+  <circle cx="50" cy="34" r="6" fill="#111"/>
+  <!-- Eye shine -->
+  <circle cx="54" cy="30" r="3" fill="white"/>
+  <!-- Smile -->
+  <path d="M 37 59 Q 50 66 63 59" stroke="#5A3A00" stroke-width="3" fill="none" stroke-linecap="round"/>
+
+  <!-- Blue overalls (lower) -->
+  <rect x="28" y="72" width="44" height="15" rx="2" fill="#3D72C4"/>
+  <rect x="19" y="85" width="62" height="20" rx="2" fill="#3D72C4"/>
+
+  <!-- Overalls pocket and logo -->
+  <rect x="41" y="75" width="18" height="12" rx="4" fill="#3668b3"/>
+  <circle cx="50" cy="81" r="5.5" fill="#121212"/>
+  <rect x="50" y="76" width="7" height="7" rx="1" fill="#3668b3" transform="rotate(45 50 76)"/>
+  <circle cx="50" cy="81" r="1.5" fill="#121212"/>
+  <rect x="50" y="80.5" width="5" height="1" rx="0" fill="#121212"/>
+
+
+  <!-- Overalls straps: start near chest center, angle outward to shoulders -->
+  <line x1="30" y1="76" x2="22" y2="64" stroke="#3D72C4" stroke-width="8" stroke-linecap="round"/>
+  <line x1="70" y1="76" x2="78" y2="64" stroke="#3D72C4" stroke-width="8" stroke-linecap="round"/>
+  <circle cx="31" cy="77" r="1" fill="#424242"/>
+  <circle cx="69" cy="77" r="1" fill="#424242"/>
+
+</svg>

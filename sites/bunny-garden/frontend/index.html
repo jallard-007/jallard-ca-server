@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Bunny Garden</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&family=Nunito:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐰</text></svg>">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div id="game-container"></div>
+
+    <header id="header">
+        <h1 id="title">🐰 Bunny Garden 🌸</h1>
+        <p id="subtitle">Click to plant lilies · Tap bunnies for details · Drag to move them!</p>
+    </header>
+
+    <div id="stats">
+        <div class="stat">
+            <span class="stat-icon">🐰</span>
+            <span class="stat-value" id="bunny-count">0</span>
+        </div>
+        <div class="stat">
+            <span class="stat-icon">🌸</span>
+            <span class="stat-value" id="flower-count">0</span>
+        </div>
+    </div>
+
+    <nav id="controls">
+        <button class="ctrl-btn" id="btn-bunny" title="Add a bunny!">
+            <span class="ctrl-icon">🐰</span>
+            <span class="ctrl-label">Add Bunny</span>
+        </button>
+        <button class="ctrl-btn" id="btn-carrot" title="Feed the bunnies!">
+            <span class="ctrl-icon">🥕</span>
+            <span class="ctrl-label">Feed</span>
+        </button>
+        <button class="ctrl-btn" id="btn-daynight" title="Toggle day/night">
+            <span class="ctrl-icon" id="daynight-icon">🌙</span>
+            <span class="ctrl-label" id="daynight-label">Night</span>
+        </button>
+        <button class="ctrl-btn" id="btn-petals" title="Make it rain petals!">
+            <span class="ctrl-icon">✨</span>
+            <span class="ctrl-label">Petals</span>
+        </button>
+        <button class="ctrl-btn" id="btn-music" title="Toggle ambient music">
+            <span class="ctrl-icon" id="music-icon">🎵</span>
+            <span class="ctrl-label" id="music-label">Music</span>
+        </button>
+    </nav>
+
+    <div id="fact-bar">
+        <span id="fact-text">Welcome to Bunny Garden! 🌸</span>
+    </div>
+
+    <div id="bunny-modal" class="modal-hidden">
+        <div class="modal-backdrop"></div>
+        <div class="modal-content">
+            <div class="modal-header">
+                <span class="modal-bunny-icon">🐰</span>
+                <h2 class="modal-title">Bunny Details</h2>
+                <button class="modal-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <label for="modal-name">Name</label>
+                <input type="text" id="modal-name" maxlength="20">
+                <label>Color</label>
+                <div id="modal-colors" class="modal-colors"></div>
+                <div class="modal-stats">
+                    <div class="modal-stat">
+                        <span>🥕 Carrots eaten</span>
+                        <span class="modal-stat-value" id="modal-carrots">0</span>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button id="modal-pet" class="modal-btn modal-btn-pet">💕 Pet</button>
+                <button id="modal-delete" class="modal-btn modal-btn-delete">🗑️ Delete</button>
+                <button id="modal-save" class="modal-btn modal-btn-save">✓ Save</button>
+            </div>
+        </div>
+    </div>
+
+    <script type="module" src="src/main.js"></script>
+</body>
+</html>
