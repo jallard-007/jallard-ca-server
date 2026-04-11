@@ -39,7 +39,11 @@ func realMain() int {
 
 	srv := api.NewServer(mux)
 
-	server := &http.Server{Addr: ":8027", Handler: srv}
+	port := os.Getenv("JALLARD_PORT")
+	if port == "" {
+		port = "8027"
+	}
+	server := &http.Server{Addr: ":" + port, Handler: srv}
 
 	done := make(chan struct{})
 	var serverErr error

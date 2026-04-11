@@ -4,7 +4,7 @@
 
 import { random, randomInt, clamp, distance, el } from './utils.js';
 import { Scene } from './scene.js';
-import { Bunny } from './bunny.js';
+import { Bunny, BUNNY_COLORS } from './bunny.js';
 import { Garden } from './garden.js';
 import { ParticleSystem } from './particles.js';
 import { sfxPop, sfxPlant, sfxPet, sfxHop, sfxMunch, sfxPetals, sfxDayNight, sfxDrop, toggleMusic, isMusicPlaying } from './audio.js';
@@ -30,7 +30,10 @@ class App {
 
         this.lastTime = 0;
         this.factInterval = null;
+        this.activeBunny = null;
+        this.selectedColor = null;
 
+        this._initModal();
         this._bindEvents();
         this._seedInitialContent();
         this._startFactTicker();
@@ -165,7 +168,78 @@ class App {
             onPet: sfxPet,
             onHop: sfxHop,
             onMunch: sfxMunch,
+            onTap: (bunny) => this._openBunnyModal(bunny),
         };
+    }
+
+    _initModal() {
+        this.modal = document.getElementById('bunny-modal');
+        this.modalName = document.getElementById('modal-name');
+        this.modalColors = document.getElementById('modal-colors');
+        this.modalCarrots = document.getElementById('modal-carrots');
+
+        // Build color swatches
+        for (const [key, val] of Object.entries(BUNNY_COLORS)) {
+            const swatch = el('div', 'modal-color-swatch');
+            swatch.dataset.color = key;
+            swatch.style.background = val.body;
+            swatch.title = val.name;
+            if (key === 'white') {
+                swatch.style.boxShadow = '0 2px 6px rgba(0,0,0,0.15), inset 0 0 0 1px rgba(0,0,0,0.08)';
+            }
+            swatch.addEventListener('click', () => {
+                this.modalColors.querySelectorAll('.modal-color-swatch').forEach(s => s.classList.remove('selected'));
+                swatch.classList.add('selected');
+                this.selectedColor = key;
+            });
+            this.modalColors.appendChild(swatch);
+        }
+
+        // Close handlers
+        this.modal.querySelector('.modal-backdrop').addEventListener('click', () => this._closeBunnyModal());
+        this.modal.querySelector('.modal-close').addEventListener('click', () => this._closeBunnyModal());
+
+        // Pet
+        document.getElementById('modal-pet').addEventListener('click', () => {
+            if (this.activeBunny) this.activeBunny.pet();
+        });
+
+        // Delete
+        document.getElementById('modal-delete').addEventListener('click', () => {
+            if (!this.activeBunny) return;
+            this.activeBunny.remove();
+            this.bunnies = this.bunnies.filter(b => b !== this.activeBunny);
+            this._updateStat(this.bunnyCountEl, this.bunnies.length);
+            this._closeBunnyModal();
+        });
+
+        // Save
+        document.getElementById('modal-save').addEventListener('click', () => {
+            if (!this.activeBunny) return;
+            const name = this.modalName.value.trim();
+            if (name) this.activeBunny.setName(name);
+            if (this.selectedColor) this.activeBunny.setColor(this.selectedColor);
+            this._closeBunnyModal();
+        });
+    }
+
+    _openBunnyModal(bunny) {
+        this.activeBunny = bunny;
+        this.modalName.value = bunny.name;
+        this.modalCarrots.textContent = bunny.carrotsEaten;
+        this.selectedColor = bunny.color;
+
+        // Highlight current color
+        this.modalColors.querySelectorAll('.modal-color-swatch').forEach(s => {
+            s.classList.toggle('selected', s.dataset.color === bunny.color);
+        });
+
+        this.modal.classList.remove('modal-hidden');
+    }
+
+    _closeBunnyModal() {
+        this.modal.classList.add('modal-hidden');
+        this.activeBunny = null;
     }
 
     async _fetchFact() {

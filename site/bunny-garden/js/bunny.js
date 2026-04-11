@@ -21,6 +21,18 @@ function pickName() {
     return name;
 }
 
+export const BUNNY_COLORS = {
+    white:    { body: '#FFFFFF', accent: '#FFB6C1', name: 'White' },
+    pink:     { body: '#FFB6C1', accent: '#FF69B4', name: 'Pink' },
+    brown:    { body: '#D2B48C', accent: '#C4956A', name: 'Brown' },
+    gray:     { body: '#C0C0C0', accent: '#A0A0A0', name: 'Gray' },
+    black:    { body: '#4A4A4A', accent: '#696969', name: 'Black' },
+    golden:   { body: '#FFE4B5', accent: '#FFD700', name: 'Golden' },
+    lavender: { body: '#E6E6FA', accent: '#DDA0DD', name: 'Lavender' },
+};
+
+const COLOR_KEYS = Object.keys(BUNNY_COLORS);
+
 export class Bunny {
     constructor(container, effectsContainer, x, y, audioCallbacks = {}) {
         this.container = container;
@@ -32,19 +44,29 @@ export class Bunny {
         this.state = 'idle';
         this.stateTimer = random(1, 3);
         this.targetX = x;
-        this.hopProgress = 0;
+        this.walkCycle = 0;
+        this.jumpTimer = 0;
+        this.color = randomChoice(COLOR_KEYS);
+        this.carrotsEaten = 0;
+        this.jumpCooldown = random(3, 8);
         this.removed = false;
         this.dragging = false;
-        this.audio = audioCallbacks; // { onPet, onHop, onMunch }
+        this.audio = audioCallbacks; // { onPet, onHop, onMunch, onTap }
 
         this._build();
         this._updatePosition();
         this.el.classList.add('pop-in');
+        this.el.addEventListener('animationend', (e) => {
+            if (e.animationName === 'pop-in') {
+                this.el.classList.remove('pop-in');
+            }
+        }, { once: true });
     }
 
     _build() {
         this.el = el('div', 'bunny');
         this.inner = el('div', 'bunny-inner', this.el);
+        this._applyColor();
 
         // Name tag — outside inner so it doesn't flip with scaleX
         const nameTag = el('div', 'bunny-name', this.el);
@@ -97,7 +119,8 @@ export class Bunny {
             moved = false;
             this.dragging = true;
             this.state = 'dragged';
-            this.el.classList.remove('hopping', 'petted', 'munching');
+            this.el.style.transform = '';
+            this.el.classList.remove('petted', 'munching');
             this.el.classList.add('grabbed');
         };
 
@@ -119,8 +142,7 @@ export class Bunny {
             this.dragging = false;
             this.el.classList.remove('grabbed');
             if (!moved) {
-                // Treat as tap → pet
-                this.pet();
+                if (this.audio.onTap) this.audio.onTap(this);
             } else {
                 this.state = 'idle';
                 this.stateTimer = random(1.5, 3);
@@ -144,7 +166,8 @@ export class Bunny {
         if (this.state === 'petted') return;
         this.state = 'petted';
         this.stateTimer = 1;
-        this.el.classList.remove('hopping', 'munching');
+        this.el.style.transform = '';
+        this.el.classList.remove('munching');
         this.el.classList.add('petted');
         if (this.audio.onPet) this.audio.onPet();
 
@@ -171,15 +194,9 @@ export class Bunny {
         if (this.state === 'petted' || this.state === 'munching' || this.state === 'dragged') return;
         this.targetX = clamp(targetX, 30, window.innerWidth - 30);
         this.facingRight = this.targetX > this.x;
-        this.state = 'hopping';
-        this.hopProgress = 0;
-        this.el.classList.remove('hopping');
-        void this.el.offsetWidth;
-        this.el.classList.add('hopping');
+        this.state = 'walking';
+        this.walkCycle = 0;
         if (this.audio.onHop) this.audio.onHop();
-        this.el.addEventListener('animationend', () => {
-            this.el.classList.remove('hopping');
-        }, { once: true });
     }
 
     goToCarrot(carrotX, carrotY, onArrive) {
@@ -195,8 +212,13 @@ export class Bunny {
 
         switch (this.state) {
             case 'idle':
+                this.jumpCooldown -= dt;
+                if (this.jumpCooldown <= 0) {
+                    this._doJump();
+                    this.jumpCooldown = random(4, 10);
+                }
+                if (this.state !== 'idle') break;
                 if (this.stateTimer <= 0) {
-                    // Pick random nearby target
                     const range = window.innerWidth * 0.3;
                     const newX = this.x + random(-range, range);
                     this.hopTo(newX);
@@ -204,20 +226,44 @@ export class Bunny {
                 }
                 break;
 
-            case 'hopping':
-                this.hopProgress += dt * 2.5;
-                if (this.hopProgress >= 1) {
+            case 'jumping': {
+                this.jumpTimer += dt;
+                if (this.jumpTimer >= 0.35) {
+                    this.el.style.transform = '';
+                    this.state = 'idle';
+                    this.stateTimer = random(2, 5);
+                } else {
+                    const t = this.jumpTimer / 0.35;
+                    const bounce = Math.sin(t * Math.PI) * 12;
+                    this.el.style.transform = `translateY(${-bounce}px)`;
+                }
+                break;
+            }
+
+            case 'walking': {
+                const speed = 120;
+                const dx = this.targetX - this.x;
+                const dir = Math.sign(dx);
+                const step = speed * dt;
+
+                this.walkCycle += dt;
+                const hopPhase = (this.walkCycle % 0.35) / 0.35;
+                const bounce = Math.sin(hopPhase * Math.PI) * 8;
+                this.el.style.transform = `translateY(${-bounce}px)`;
+
+                if (Math.abs(dx) <= step) {
                     this.x = this.targetX;
+                    this.el.style.transform = '';
                     this.state = 'idle';
                     this.stateTimer = random(1.5, 4);
 
-                    // Check if heading to carrot
                     if (this.carrotCallback && this.carrotTarget) {
                         const dist = Math.abs(this.x - this.carrotTarget.x);
                         if (dist < 50) {
                             this.state = 'munching';
                             this.el.classList.add('munching');
                             this.stateTimer = 1.5;
+                            this.carrotsEaten++;
                             if (this.audio.onMunch) this.audio.onMunch();
                             this.carrotCallback();
                             this.carrotCallback = null;
@@ -225,15 +271,10 @@ export class Bunny {
                         }
                     }
                 } else {
-                    const t = this.hopProgress;
-                    const ease = t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
-                    const startX = this.x;
-                    const hopX = startX + (this.targetX - startX) * ease;
-                    this.el.style.left = `${hopX}px`;
-                    this._updatePosition();
-                    return; // skip normal position update during hop
+                    this.x += dir * step;
                 }
                 break;
+            }
 
             case 'munching':
                 if (this.stateTimer <= 0) {
@@ -256,6 +297,39 @@ export class Bunny {
         }
 
         this._updatePosition();
+    }
+
+    _applyColor() {
+        const c = BUNNY_COLORS[this.color];
+        this.el.style.setProperty('--bunny-body', c.body);
+        this.el.style.setProperty('--bunny-accent', c.accent);
+    }
+
+    setColor(colorKey) {
+        if (BUNNY_COLORS[colorKey]) {
+            this.color = colorKey;
+            this._applyColor();
+        }
+    }
+
+    setName(newName) {
+        usedNames.delete(this.name);
+        this.name = newName;
+        usedNames.add(newName);
+        this.el.querySelector('.bunny-name').textContent = newName;
+    }
+
+    remove() {
+        this.removed = true;
+        usedNames.delete(this.name);
+        this.el.classList.add('pop-out');
+        this.el.addEventListener('animationend', () => this.el.remove());
+    }
+
+    _doJump() {
+        if (this.state !== 'idle') return;
+        this.state = 'jumping';
+        this.jumpTimer = 0;
     }
 
     getCenter() {
