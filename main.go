@@ -22,20 +22,8 @@ func realMain() int {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
 	defer stop()
 
-	noCache := func(next http.Handler) http.Handler {
-		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			w.Header().Set("Cache-Control", "no-store")
-			next.ServeHTTP(w, r)
-		})
-	}
-
 	mux := http.NewServeMux()
-	fs := http.FileServer(http.Dir("./site"))
-	mux.Handle("/bunny-garden/", noCache(fs))
-	mux.HandleFunc("/bunny-garden", func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Cache-Control", "no-store")
-		http.ServeFile(w, r, "./site/bunny-garden/index.html")
-	})
+	mux.Handle("/", http.FileServer(http.Dir("./dist")))
 
 	srv := api.NewServer(mux)
 
