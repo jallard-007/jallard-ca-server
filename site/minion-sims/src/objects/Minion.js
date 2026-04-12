@@ -1,4 +1,4 @@
-import Phaser from 'phaser';
+import * as Phaser from 'phaser';
 import { BODY_DIMS, WEIGHT_SCALE, MOOD_EMOJI, getMoodFromValue, CLOTHING_ITEMS } from '../utils.js';
 import { GameState } from '../systems/GameState.js';
 
@@ -599,6 +599,7 @@ export class Minion extends Phaser.GameObjects.Container {
       this._rt.clear();
     }
     this._rt.draw(g, padX, padY);
+    this._rt.render(); // v4: execute buffered draw commands
     if (!this._texSaved) {
       this._rt.saveTexture(texKey);
       this._texSaved = true;

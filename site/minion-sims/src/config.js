@@ -1,4 +1,4 @@
-import Phaser from 'phaser';
+import * as Phaser from 'phaser';
 import { BootScene } from './scenes/BootScene.js';
 import { YardScene } from './scenes/YardScene.js';
 import { LabScene } from './scenes/LabScene.js';

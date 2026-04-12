@@ -1,4 +1,4 @@
-import Phaser from 'phaser';
+import * as Phaser from 'phaser';
 import { GameState } from '../systems/GameState.js';
 import { MinionAI } from '../systems/MinionAI.js';
 import { Minion } from '../objects/Minion.js';
@@ -33,10 +33,12 @@ export class YardScene extends Phaser.Scene {
     const w = this.scale.width;
     const h = this.scale.height;
 
-    // Sky
+    // Sky (two-tone gradient approximation — fillGradientStyle removed in v4)
     const sky = this.add.graphics();
-    sky.fillGradientStyle(0x87CEEB, 0x87CEEB, 0xC5E8F7, 0xC5E8F7, 1);
-    sky.fillRect(0, 0, w, h * 0.35);
+    sky.fillStyle(0x87CEEB, 1);
+    sky.fillRect(0, 0, w, h * 0.175);
+    sky.fillStyle(0xC5E8F7, 1);
+    sky.fillRect(0, h * 0.175, w, h * 0.175);
 
     // Sun
     this.add.text(w - 70, 25, '☀️', { fontSize: '40px' }).setDepth(0);

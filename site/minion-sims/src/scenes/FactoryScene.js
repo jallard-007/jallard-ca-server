@@ -1,4 +1,4 @@
-import Phaser from 'phaser';
+import * as Phaser from 'phaser';
 import { GameState } from '../systems/GameState.js';
 import { MinionAI } from '../systems/MinionAI.js';
 import { Minion } from '../objects/Minion.js';
@@ -32,10 +32,12 @@ export class FactoryScene extends Phaser.Scene {
     const w = this.scale.width;
     const h = this.scale.height;
 
-    // Dark industrial ceiling
+    // Dark industrial ceiling (two-tone gradient approximation — fillGradientStyle removed in v4)
     const bg = this.add.graphics();
-    bg.fillGradientStyle(0x2A2A2A, 0x2A2A2A, 0x3A3A3A, 0x3A3A3A, 1);
-    bg.fillRect(0, 0, w, h);
+    bg.fillStyle(0x2A2A2A, 1);
+    bg.fillRect(0, 0, w, h * 0.5);
+    bg.fillStyle(0x3A3A3A, 1);
+    bg.fillRect(0, h * 0.5, w, h * 0.5);
 
     // Concrete floor
     bg.fillStyle(0x4A4A4A, 1);

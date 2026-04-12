@@ -1,4 +1,4 @@
-import Phaser from 'phaser';
+import * as Phaser from 'phaser';
 import { GameState } from '../systems/GameState.js';
 import { SaveManager } from '../systems/SaveManager.js';
 import { Economy } from '../systems/Economy.js';
