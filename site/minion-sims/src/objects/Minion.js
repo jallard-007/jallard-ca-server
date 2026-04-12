@@ -6,8 +6,10 @@ export class Minion extends Phaser.GameObjects.Container {
   constructor(scene, x, y, minionData) {
     super(scene, x, y);
     this.minionId = minionData.id;
+    this._lastDepthY = Math.floor(y);
     this._build();
     this.setSize(90, 120);
+    this.setDepth(this._lastDepthY + 10);
     this.setInteractive({ useHandCursor: true, draggable: true });
     scene.add.existing(this);
 
@@ -579,6 +581,37 @@ export class Minion extends Phaser.GameObjects.Container {
     this.moodBubble.setVisible(GameState.settings.showMoodBubbles && !d.isSleeping);
     this.moodBubble.setText(MOOD_EMOJI[mood]);
     this.sleepText.setVisible(d.isSleeping);
+
+    // --- Cache graphics as a static texture (1 sprite draw vs 200+ graphics ops/frame) ---
+    const padX = Math.ceil(dims.w / 2) + 35;
+    const padY = Math.ceil(dims.h / 2) + 55;
+    const texW = padX * 2;
+    const texH = padY * 2;
+    const texKey = `_mb_${this.minionId}`;
+
+    // Don't remove+recreate the texture each redraw — textures.remove()
+    // destroys the GL resources shared by the RenderTexture via saveTexture,
+    // corrupting the renderer.  Instead, save once and just clear+redraw;
+    // the saved texture shares the same underlying data and updates in place.
+    if (!this._rt) {
+      this._rt = this.scene.make.renderTexture({ width: texW, height: texH, add: false });
+    } else {
+      this._rt.clear();
+    }
+    this._rt.draw(g, padX, padY);
+    if (!this._texSaved) {
+      this._rt.saveTexture(texKey);
+      this._texSaved = true;
+    }
+    g.setVisible(false);
+
+    if (!this.bodyImg) {
+      this.bodyImg = this.scene.make.image({ key: texKey, add: false });
+      this.bodyImg.setOrigin(padX / texW, padY / texH);
+      // Insert right after bodyGfx in the display list
+      const idx = this.getIndex(this.bodyGfx);
+      this.addAt(this.bodyImg, idx + 1);
+    }
   }
 
   _goggleColor(gogglesId) {
@@ -765,7 +798,9 @@ export class Minion extends Phaser.GameObjects.Container {
   update() {
     if (!this.mData) return;
 
-    // Depth by Y — kept in update() since position changes via tweens
+    // Only recompute depth when position actually changing (tweening or dragging)
+    if (!this.getData('tweening') && !this._dragStarted) return;
+
     const depthY = Math.floor(this.y);
     if (depthY !== this._lastDepthY) {
       this._lastDepthY = depthY;
@@ -790,6 +825,9 @@ export class Minion extends Phaser.GameObjects.Container {
   }
 
   _updateSelectionRing(isSelected, isSecondary) {
+    if (isSelected === this._ringSelected && isSecondary === this._ringSecondary) return;
+    this._ringSelected = isSelected;
+    this._ringSecondary = isSecondary;
     this.ring.clear();
     if (isSelected) {
       this.ring.lineStyle(3, 0x00ff00, 0.8);
@@ -806,6 +844,16 @@ export class Minion extends Phaser.GameObjects.Container {
 
   destroy() {
     if (this._unsubs) this._unsubs.forEach(fn => fn());
+    const texKey = `_mb_${this.minionId}`;
+    // Destroy RT first (releases GL framebuffer), then remove the
+    // texture-manager entry so nothing references the dead resources.
+    if (this._rt) {
+      this._rt.destroy();
+      this._rt = null;
+    }
+    if (this.scene && this.scene.textures.exists(texKey)) {
+      this.scene.textures.remove(texKey);
+    }
     super.destroy(true);
   }
 }

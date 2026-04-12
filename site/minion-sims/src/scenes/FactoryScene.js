@@ -191,7 +191,9 @@ export class FactoryScene extends Phaser.Scene {
     MinionAI.update(time, delta, this.minionSprites, this);
 
     for (const [, sprite] of this.minionSprites) {
-      sprite.update();
+      if (sprite.getData('tweening') || sprite._dragStarted) {
+        sprite.update();
+      }
       // Throttled sweat/effort particles — check every ~500ms per minion instead of every frame
       if (!sprite.getData('nextSweat') || time >= sprite.getData('nextSweat')) {
         sprite.setData('nextSweat', time + 500);

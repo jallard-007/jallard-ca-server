@@ -14,9 +14,9 @@ export const gameConfig = {
     autoCenter: Phaser.Scale.CENTER_BOTH,
   },
   scene: [BootScene, YardScene, LabScene, FactoryScene],
-  physics: {
-    default: 'arcade',
-    arcade: { debug: false },
+  fps: {
+    target: 30,
+    forceSetTimeOut: true,
   },
   backgroundColor: '#87CEEB',
 };

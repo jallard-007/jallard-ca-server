@@ -121,14 +121,22 @@ ActionRegistry.register({
   },
 });
 
-// Preload both images and audio once at module load
+// Preload images and audio as blob URLs at module load (fetched once, no network on use)
 const _imgBase = import.meta.env.BASE_URL || '/minion-sims/';
-[`${_imgBase}img/IMG_3011.jpg`, `${_imgBase}img/IMG_3010.jpg`].forEach(src => {
-  const i = new Image(); i.src = src;
-});
-const _preloadAudio = (src) => { const a = new Audio(); a.preload = 'auto'; a.src = src; };
-_preloadAudio(`${_imgBase}audio/vine-boom.mp3`);
-_preloadAudio(`${_imgBase}audio/minion-yahoo.mp3`);
+const _assetCache = {};
+const _assetURLs = [
+  `${_imgBase}img/IMG_3011.jpg`,
+  `${_imgBase}img/IMG_3010.jpg`,
+  `${_imgBase}audio/vine-boom.mp3`,
+  `${_imgBase}audio/minion-yahoo.mp3`,
+];
+Promise.all(_assetURLs.map(url =>
+  fetch(url)
+    .then(r => r.blob())
+    .then(blob => { _assetCache[url] = URL.createObjectURL(blob); })
+    .catch(() => { _assetCache[url] = url; }) // fallback to original URL
+));
+function _cached(url) { return _assetCache[url] || url; }
 
 function showProcreateCutscene(parent1, parent2) {
   // Block all input
@@ -161,16 +169,16 @@ function showProcreateCutscene(parent1, parent2) {
 
   const img2 = document.createElement('img');
   Object.assign(img2.style, { ...imgStyle, opacity: '0' });
-  img2.src = `${_imgBase}img/IMG_3010.jpg`;
+  img2.src = _cached(`${_imgBase}img/IMG_3010.jpg`);
   stack.appendChild(img2);
 
   const img1 = document.createElement('img');
   Object.assign(img1.style, { ...imgStyle, opacity: '1' });
-  img1.src = `${_imgBase}img/IMG_3011.jpg`;
+  img1.src = _cached(`${_imgBase}img/IMG_3011.jpg`);
   stack.appendChild(img1);
 
   // Phase 1: flash IMG_3011, vine boom
-  AudioManager.playFile(`${_imgBase}audio/vine-boom.mp3`);
+  AudioManager.playFile(_cached(`${_imgBase}audio/vine-boom.mp3`));
 
   // Fade IMG_3011 out — IMG_3010 is already rendered underneath
   setTimeout(() => {
@@ -182,7 +190,7 @@ function showProcreateCutscene(parent1, parent2) {
   setTimeout(() => {
     img2.style.transition = 'opacity 0.4s ease';
     img2.style.opacity = '1';
-    AudioManager.playFile(`${_imgBase}audio/minion-yahoo.mp3`);
+    AudioManager.playFile(_cached(`${_imgBase}audio/minion-yahoo.mp3`));
   }, 900);
 
   // Phase 3: hold 1s then fade both out, open nursery

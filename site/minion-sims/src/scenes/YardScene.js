@@ -114,8 +114,11 @@ export class YardScene extends Phaser.Scene {
   update(time, delta) {
     MinionAI.update(time, delta, this.minionSprites, this);
 
+    // Only update minions that are actively moving
     for (const [, sprite] of this.minionSprites) {
-      sprite.update();
+      if (sprite.getData('tweening') || sprite._dragStarted) {
+        sprite.update();
+      }
     }
   }
 

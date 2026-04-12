@@ -49,6 +49,11 @@ class HUDClass {
   }
 
   _bind() {
+    // Cache element references — avoid querying DOM on every update
+    this._coinEl = this.el.querySelector('#coin-count');
+    this._bananaEl = this.el.querySelector('#banana-count');
+    this._labTab = this.el.querySelector('[data-area="lab"]');
+
     this.el.querySelectorAll('.area-tab').forEach(btn => {
       btn.addEventListener('click', () => {
         AudioManager.play('ui-click');
@@ -170,8 +175,7 @@ class HUDClass {
   }
 
   _updateLabTab() {
-    const lab = this.el.querySelector('[data-area="lab"]');
-    lab.classList.toggle('locked', !GameState.labUnlocked);
+    this._labTab.classList.toggle('locked', !GameState.labUnlocked);
   }
 
   _showMissionComplete(mission) {
@@ -212,10 +216,8 @@ class HUDClass {
   }
 
   update() {
-    const coinEl = this.el.querySelector('#coin-count');
-    const bananaEl = this.el.querySelector('#banana-count');
-    if (coinEl) coinEl.textContent = GameState.bananaCoins;
-    if (bananaEl) bananaEl.textContent = GameState.bananas;
+    if (this._coinEl) this._coinEl.textContent = GameState.bananaCoins;
+    if (this._bananaEl) this._bananaEl.textContent = GameState.bananas;
     this._updateLabTab();
 
     // Mission banner

@@ -13,6 +13,9 @@ class FactoryPanelClass {
     this.el.style.display = 'none';
     document.body.appendChild(this.el);
 
+    // Single delegated click handler — no per-render listener accumulation
+    this.el.addEventListener('click', (e) => this._handleClick(e));
+
     GameState.on('open-factory', () => this.show());
     GameState.on('close-factory', () => this.hide());
     GameState.on('coins-changed', () => { if (this.el.style.display !== 'none') this._render(); });
@@ -23,22 +26,41 @@ class FactoryPanelClass {
   show() {
     this.el.style.display = 'flex';
     this._render();
-    // Refresh timer display periodically while open
     this._interval = setInterval(() => this._render(), 5000);
-
-    // Close on backdrop click
-    this._onBackdropClick = (e) => {
-      if (e.target === this.el) this.hide();
-    };
-    this.el.addEventListener('click', this._onBackdropClick);
   }
 
   hide() {
     this.el.style.display = 'none';
     clearInterval(this._interval);
-    if (this._onBackdropClick) {
-      this.el.removeEventListener('click', this._onBackdropClick);
-      this._onBackdropClick = null;
+  }
+
+  _handleClick(e) {
+    // Backdrop click to close
+    if (e.target === this.el) { this.hide(); return; }
+
+    // Close button
+    if (e.target.id === 'factory-close' || e.target.closest('#factory-close')) {
+      this.hide();
+      return;
+    }
+
+    // Recall button — use event delegation
+    const recallBtn = e.target.closest('.recall-btn');
+    if (recallBtn) {
+      AudioManager.play('whistle');
+      const id = recallBtn.dataset.id;
+      const m = GameState.getMinion(id);
+      if (m) {
+        if (GameState.factoryLog[m.id]) {
+          const elapsed = Date.now() - GameState.factoryLog[m.id].enteredAt;
+          const flags = GameState.storyProgress.flags;
+          flags.maxFactoryTime = Math.max(flags.maxFactoryTime || 0, elapsed);
+        }
+        GameState.setMinionArea(m.id, 'yard');
+        delete GameState.factoryLog[m.id];
+        GameState.emit('refresh-minions');
+      }
+      this._render();
     }
   }
 
@@ -75,33 +97,6 @@ class FactoryPanelClass {
     }
     html += '</div>';
     this.el.innerHTML = html;
-
-    // Close button
-    const closeBtn = this.el.querySelector('#factory-close');
-    if (closeBtn) {
-      closeBtn.addEventListener('click', () => this.hide());
-    }
-
-    // Recall buttons
-    this.el.querySelectorAll('.recall-btn').forEach(btn => {
-      btn.addEventListener('click', () => {
-        AudioManager.play('whistle');
-        const id = btn.dataset.id;
-        const m = GameState.getMinion(id);
-        if (m) {
-          // Track factory time for story
-          if (GameState.factoryLog[m.id]) {
-            const elapsed = Date.now() - GameState.factoryLog[m.id].enteredAt;
-            const flags = GameState.storyProgress.flags;
-            flags.maxFactoryTime = Math.max(flags.maxFactoryTime || 0, elapsed);
-          }
-          GameState.setMinionArea(m.id, 'yard');
-          delete GameState.factoryLog[m.id];
-          GameState.emit('refresh-minions');
-        }
-        this._render();
-      });
-    });
   }
 
   destroy() {

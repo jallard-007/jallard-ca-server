@@ -105,7 +105,9 @@ export class LabScene extends Phaser.Scene {
     MinionAI.update(time, delta, this.minionSprites, this);
 
     for (const [, sprite] of this.minionSprites) {
-      sprite.update();
+      if (sprite.getData('tweening') || sprite._dragStarted) {
+        sprite.update();
+      }
     }
   }
 

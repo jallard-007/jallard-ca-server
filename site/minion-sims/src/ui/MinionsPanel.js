@@ -15,8 +15,12 @@ class MinionsPanelClass {
 
     GameState.on('open-minions', () => this.show());
 
+    // Single delegated listener — no per-render accumulation
     this.el.addEventListener('click', (e) => {
-      if (e.target === this.el) this.hide();
+      if (e.target === this.el) { this.hide(); return; }
+      if (e.target.id === 'minions-close' || e.target.closest('#minions-close')) {
+        this.hide();
+      }
     });
   }
 
@@ -72,8 +76,6 @@ class MinionsPanelClass {
           ${minions.length ? rows : '<p style="text-align:center;opacity:.6">No minions yet.</p>'}
         </div>
       </div>`;
-
-    this.el.querySelector('#minions-close').addEventListener('click', () => this.hide());
   }
 
   destroy() {

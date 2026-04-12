@@ -22,6 +22,69 @@ class WardrobeClass {
       this._activeSlot = 'hat';
       this.show();
     });
+
+    // Single delegated click handler — avoids re-binding on every _render()
+    this.el.addEventListener('click', (e) => this._handleClick(e));
+  }
+
+  _handleClick(e) {
+    const t = e.target;
+    if (t === this.el) { this.hide(); return; }
+    if (t.id === 'wdr-close' || t.closest('#wdr-close')) { this.hide(); return; }
+
+    const m = GameState.getMinion(this._minionId);
+    if (!m) return;
+
+    if (t.id === 'wdr-clear' || t.closest('#wdr-clear')) {
+      const defaultGoggles = m.eyeType === 'one-eye' ? 'default-goggles-1' : 'default-goggles-2';
+      GameState.setMinionOutfit(m.id, 'hair', null);
+      GameState.setMinionOutfit(m.id, 'hat', null);
+      GameState.setMinionOutfit(m.id, 'goggles', defaultGoggles);
+      GameState.setMinionOutfit(m.id, 'top', 'overalls');
+      GameState.setMinionOutfit(m.id, 'bottom', 'overalls-bottom');
+      GameState.setMinionOutfit(m.id, 'shoes', null);
+      GameState.setMinionOutfit(m.id, 'gloves', null);
+      GameState.setMinionOutfit(m.id, 'accessory', null);
+      this._render();
+      return;
+    }
+
+    if (t.id === 'wdr-random' || t.closest('#wdr-random')) {
+      this._randomize(m);
+      this._render();
+      return;
+    }
+
+    const slotTab = t.closest('.slot-tab');
+    if (slotTab) {
+      this._activeSlot = slotTab.dataset.slot;
+      this._render();
+      return;
+    }
+
+    const itemBtn = t.closest('.item-btn');
+    if (itemBtn && !itemBtn.disabled) {
+      const itemId = itemBtn.dataset.id;
+      const slot = itemBtn.dataset.slot;
+
+      if (itemBtn.classList.contains('buy')) {
+        const item = CLOTHING_ITEMS[itemId];
+        if (Economy.spendCoins(item.cost)) {
+          GameState.unlockedClothing.add(itemId);
+          AudioManager.play('coin');
+        } else return;
+      }
+
+      if (m.outfit[slot] === itemId) {
+        GameState.setMinionOutfit(m.id, slot, null);
+      } else {
+        GameState.setMinionOutfit(m.id, slot, itemId);
+      }
+      AudioManager.play('zipper');
+      GameState.storyProgress.flags.clothingEquipped = true;
+      GameState.emit('state-changed');
+      this._render();
+    }
   }
 
   show() {
@@ -72,60 +135,6 @@ class WardrobeClass {
         </div>
       </div>
     `;
-
-    // Event listeners
-    this.el.querySelector('#wdr-close').addEventListener('click', () => this.hide());
-    this.el.querySelector('#wdr-clear').addEventListener('click', () => {
-      const defaultGoggles = m.eyeType === 'one-eye' ? 'default-goggles-1' : 'default-goggles-2';
-      GameState.setMinionOutfit(m.id, 'hair', null);
-      GameState.setMinionOutfit(m.id, 'hat', null);
-      GameState.setMinionOutfit(m.id, 'goggles', defaultGoggles);
-      GameState.setMinionOutfit(m.id, 'top', 'overalls');
-      GameState.setMinionOutfit(m.id, 'bottom', 'overalls-bottom');
-      GameState.setMinionOutfit(m.id, 'shoes', null);
-      GameState.setMinionOutfit(m.id, 'gloves', null);
-      GameState.setMinionOutfit(m.id, 'accessory', null);
-      this._refreshMinion();
-      this._render();
-    });
-    this.el.querySelector('#wdr-random').addEventListener('click', () => {
-      this._randomize(m);
-      this._render();
-    });
-
-    this.el.querySelectorAll('.slot-tab').forEach(btn => {
-      btn.addEventListener('click', () => {
-        this._activeSlot = btn.dataset.slot;
-        this._render();
-      });
-    });
-
-    this.el.querySelectorAll('.item-btn').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const itemId = btn.dataset.id;
-        const slot = btn.dataset.slot;
-
-        if (btn.classList.contains('buy')) {
-          const item = CLOTHING_ITEMS[itemId];
-          if (Economy.spendCoins(item.cost)) {
-            GameState.unlockedClothing.add(itemId);
-            AudioManager.play('coin');
-          } else return;
-        }
-
-        // Toggle equip
-        if (m.outfit[slot] === itemId) {
-          GameState.setMinionOutfit(m.id, slot, null);
-        } else {
-          GameState.setMinionOutfit(m.id, slot, itemId);
-        }
-        AudioManager.play('zipper');
-        GameState.storyProgress.flags.clothingEquipped = true;
-        GameState.emit('state-changed');
-        this._refreshMinion();
-        this._render();
-      });
-    });
   }
 
   _renderItems(m) {
@@ -173,21 +182,11 @@ class WardrobeClass {
         GameState.setMinionOutfit(m.id, slot, pick.id);
       }
     }
-    this._refreshMinion();
-  }
-
-  _refreshMinion() {
-    // Trigger minion sprite redraw
-    if (GameState.activeScene?.minionSprites) {
-      const spr = GameState.activeScene.minionSprites.get(this._minionId);
-      if (spr) spr.redraw();
-    }
   }
 
   hide() {
     this.el.style.display = 'none';
     this._minionId = null;
-    this._refreshMinion();
   }
 
   destroy() {

@@ -15,6 +15,51 @@ class SettingsClass {
     document.body.appendChild(this.el);
 
     GameState.on('open-settings', () => this.show());
+
+    // Single delegated listener — avoids re-binding on every _render()
+    this.el.addEventListener('click', (e) => this._handleClick(e));
+    this.el.addEventListener('input', (e) => this._handleInput(e));
+    this.el.addEventListener('change', (e) => this._handleChange(e));
+  }
+
+  _handleClick(e) {
+    const t = e.target;
+    if (t === this.el) { this.hide(); return; }
+    if (t.id === 'settings-close' || t.closest('#settings-close')) { this.hide(); return; }
+    if (t.id === 'save-now' || t.closest('#save-now')) {
+      AudioManager.play('ui-click');
+      SaveManager.save();
+      this._render();
+      return;
+    }
+    if (t.id === 'reset-game' || t.closest('#reset-game')) {
+      if (confirm('Reset ALL game data? This cannot be undone!')) {
+        SaveManager.reset();
+        window.location.reload();
+      }
+    }
+  }
+
+  _handleInput(e) {
+    if (e.target.id === 'music-vol') {
+      GameState.setSetting('musicVolume', parseInt(e.target.value));
+      const valEl = this.el.querySelector('#music-val');
+      if (valEl) valEl.textContent = GameState.settings.musicVolume + '%';
+    } else if (e.target.id === 'sfx-vol') {
+      GameState.setSetting('sfxVolume', parseInt(e.target.value));
+      const valEl = this.el.querySelector('#sfx-val');
+      if (valEl) valEl.textContent = GameState.settings.sfxVolume + '%';
+    }
+  }
+
+  _handleChange(e) {
+    if (e.target.id === 'show-mood') {
+      GameState.setSetting('showMoodBubbles', e.target.checked);
+    } else if (e.target.id === 'show-names') {
+      GameState.setSetting('showNameLabels', e.target.checked);
+    } else if (e.target.id === 'game-speed') {
+      GameState.setSetting('gameSpeed', parseFloat(e.target.value));
+    }
   }
 
   show() {
@@ -67,44 +112,6 @@ class SettingsClass {
         </div>
       </div>
     `;
-
-    // Bind events
-    this.el.querySelector('#settings-close').addEventListener('click', () => this.hide());
-
-    this.el.querySelector('#music-vol').addEventListener('input', (e) => {
-      GameState.setSetting('musicVolume', parseInt(e.target.value));
-      this.el.querySelector('#music-val').textContent = GameState.settings.musicVolume + '%';
-    });
-
-    this.el.querySelector('#sfx-vol').addEventListener('input', (e) => {
-      GameState.setSetting('sfxVolume', parseInt(e.target.value));
-      this.el.querySelector('#sfx-val').textContent = GameState.settings.sfxVolume + '%';
-    });
-
-    this.el.querySelector('#show-mood').addEventListener('change', (e) => {
-      GameState.setSetting('showMoodBubbles', e.target.checked);
-    });
-
-    this.el.querySelector('#show-names').addEventListener('change', (e) => {
-      GameState.setSetting('showNameLabels', e.target.checked);
-    });
-
-    this.el.querySelector('#game-speed').addEventListener('change', (e) => {
-      GameState.setSetting('gameSpeed', parseFloat(e.target.value));
-    });
-
-    this.el.querySelector('#save-now').addEventListener('click', () => {
-      AudioManager.play('ui-click');
-      SaveManager.save();
-      this._render();
-    });
-
-    this.el.querySelector('#reset-game').addEventListener('click', () => {
-      if (confirm('Reset ALL game data? This cannot be undone!')) {
-        SaveManager.reset();
-        window.location.reload();
-      }
-    });
   }
 
   hide() {

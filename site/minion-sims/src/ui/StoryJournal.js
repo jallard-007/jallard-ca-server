@@ -15,6 +15,27 @@ class StoryJournalClass {
     document.body.appendChild(this.el);
 
     GameState.on('open-story-journal', () => this.show());
+
+    // Single delegated click handler
+    this.el.addEventListener('click', (e) => this._handleClick(e));
+  }
+
+  _handleClick(e) {
+    const t = e.target;
+    if (t === this.el) { this.hide(); return; }
+    if (t.id === 'story-close' || t.closest('#story-close')) { this.hide(); return; }
+    if (t.id === 'fund-rescue' || t.closest('#fund-rescue')) {
+      AudioManager.play('coin');
+      if (Story.fundRescue()) {
+        this._render();
+      } else {
+        const btn = this.el.querySelector('#fund-rescue');
+        if (btn) {
+          btn.textContent = 'Not enough coins!';
+          setTimeout(() => { btn.textContent = '💰 Fund Rescue (75 🪙)'; }, 1500);
+        }
+      }
+    }
   }
 
   show() {
@@ -88,21 +109,6 @@ class StoryJournalClass {
 
     html += '</div>';
     this.el.innerHTML = html;
-
-    this.el.querySelector('#story-close').addEventListener('click', () => this.hide());
-
-    const rescueBtn = this.el.querySelector('#fund-rescue');
-    if (rescueBtn) {
-      rescueBtn.addEventListener('click', () => {
-        AudioManager.play('coin');
-        if (Story.fundRescue()) {
-          this._render();
-        } else {
-          rescueBtn.textContent = 'Not enough coins!';
-          setTimeout(() => { rescueBtn.textContent = '💰 Fund Rescue (75 🪙)'; }, 1500);
-        }
-      });
-    }
   }
 
   hide() {
