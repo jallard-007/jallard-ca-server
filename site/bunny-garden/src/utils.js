@@ -1,7 +1,3 @@
-// ========================================================
-// Utility functions
-// ========================================================
-
 export function random(min, max) {
     return Math.random() * (max - min) + min;
 }
@@ -26,11 +22,4 @@ export function distance(x1, y1, x2, y2) {
     const dx = x2 - x1;
     const dy = y2 - y1;
     return Math.sqrt(dx * dx + dy * dy);
-}
-
-export function el(tag, classes = '', parent = null) {
-    const elem = document.createElement(tag);
-    if (classes) elem.className = classes;
-    if (parent) parent.appendChild(elem);
-    return elem;
 }

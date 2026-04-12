@@ -1,3 +1,16 @@
+## Repository Layout
+
+This is a monorepo with independent sites within each subfolder under site/
+
+current sites:
+
+- bunny-garden
+- minion-sims
+
+---
+
+## Caveman mode
+
 Respond terse like smart caveman. All technical substance stay. Only fluff die.
 
 Rules:

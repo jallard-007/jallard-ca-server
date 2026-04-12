@@ -1,6 +1,5 @@
-// ========================================================
-// Audio — procedural sound effects & ambient music
-// ========================================================
+// Procedural audio — Web Audio API SFX + generative music
+// No audio files needed. All sounds synthesized on the fly.
 
 let ctx = null;
 let masterGain = null;
@@ -28,8 +27,6 @@ function ensureCtx() {
     return ctx;
 }
 
-// ===== SFX =====
-
 function playTone(freq, duration, type = 'sine', gainVal = 0.3, detune = 0) {
     const c = ensureCtx();
     const osc = c.createOscillator();
@@ -51,16 +48,14 @@ export function sfxPop() {
 }
 
 export function sfxPlant() {
-    const c = ensureCtx();
-    // Rising sparkle — three quick ascending tones
+    ensureCtx();
     [523, 659, 784].forEach((f, i) => {
         setTimeout(() => playTone(f, 0.15, 'sine', 0.2), i * 50);
     });
 }
 
 export function sfxPet() {
-    const c = ensureCtx();
-    // Happy chirpy ascending notes
+    ensureCtx();
     [660, 880, 1047, 1320].forEach((f, i) => {
         setTimeout(() => playTone(f, 0.12, 'triangle', 0.2), i * 60);
     });
@@ -84,7 +79,6 @@ export function sfxHop() {
 
 export function sfxMunch() {
     const c = ensureCtx();
-    // Crunchy noise bursts
     for (let i = 0; i < 3; i++) {
         setTimeout(() => {
             const buf = c.createBuffer(1, c.sampleRate * 0.04, c.sampleRate);
@@ -110,22 +104,19 @@ export function sfxMunch() {
 }
 
 export function sfxPetals() {
-    const c = ensureCtx();
-    // Shimmery descending sparkle
+    ensureCtx();
     [1568, 1319, 1047, 880, 784].forEach((f, i) => {
         setTimeout(() => playTone(f, 0.2, 'sine', 0.12, Math.random() * 10), i * 70);
     });
 }
 
 export function sfxDayNight(isNight) {
-    const c = ensureCtx();
+    ensureCtx();
     if (isNight) {
-        // Gentle descending lullaby tones
         [784, 659, 523].forEach((f, i) => {
             setTimeout(() => playTone(f, 0.3, 'sine', 0.15), i * 120);
         });
     } else {
-        // Bright ascending morning tones
         [523, 659, 784, 1047].forEach((f, i) => {
             setTimeout(() => playTone(f, 0.2, 'triangle', 0.15), i * 80);
         });
@@ -147,8 +138,7 @@ export function sfxDrop() {
     osc.stop(c.currentTime + 0.3);
 }
 
-// ===== AMBIENT MUSIC =====
-// Simple generative ambient: layered slow oscillators with gentle volume cycling
+// Generative music — I-V-vi-IV in C major, 115 BPM
 
 export function toggleMusic() {
     ensureCtx();
@@ -165,41 +155,35 @@ function startMusic() {
     musicPlaying = true;
     const c = ensureCtx();
 
-    // --- Bouncy melody over a I-V-vi-IV progression in C major ---
     const BPM = 115;
     const beatSec = 60 / BPM;
     const barSec = beatSec * 4;
 
-    // Chord roots (2 bars each = 8-bar loop)
     const chords = [
-        [261.63, 329.63, 392.00], // C
-        [196.00, 246.94, 293.66], // G
-        [220.00, 261.63, 329.63], // Am
-        [174.61, 220.00, 261.63], // F
+        [261.63, 329.63, 392.00],
+        [196.00, 246.94, 293.66],
+        [220.00, 261.63, 329.63],
+        [174.61, 220.00, 261.63],
     ];
 
-    // Catchy melody pattern — note index into pentatonic + octave
     const melodyNotes = [
         523.25, 587.33, 659.25, 523.25,
         783.99, 659.25, 587.33, 523.25,
         659.25, 783.99, 880.00, 783.99,
-        659.25, 523.25, 587.33, 0,      // 0 = rest
+        659.25, 523.25, 587.33, 0,
     ];
 
-    // Schedule one full loop, then repeat
     function scheduleLoop() {
         if (!musicPlaying) return;
         const now = c.currentTime + 0.05;
         const loopLen = barSec * 4;
 
-        // Bass + pad chords
         chords.forEach((chord, ci) => {
             const chordStart = now + ci * barSec;
 
-            // Bass note (triangle, warm)
             const bass = c.createOscillator();
             bass.type = 'triangle';
-            bass.frequency.value = chord[0] / 2; // octave lower
+            bass.frequency.value = chord[0] / 2;
             const bg = c.createGain();
             bg.gain.setValueAtTime(0, chordStart);
             bg.gain.linearRampToValueAtTime(0.1, chordStart + 0.05);
@@ -211,7 +195,6 @@ function startMusic() {
             bass.stop(chordStart + barSec);
             musicNodes.push({ osc: bass, voiceGain: bg });
 
-            // Staccato chord hits on beats 1 and 3
             [0, 2].forEach(beat => {
                 chord.forEach(freq => {
                     const o = c.createOscillator();
@@ -232,9 +215,8 @@ function startMusic() {
             });
         });
 
-        // Melody — one note per beat
         melodyNotes.forEach((freq, i) => {
-            if (freq === 0) return; // rest
+            if (freq === 0) return;
             const t = now + i * beatSec;
             const dur = beatSec * 0.6;
 
@@ -243,7 +225,6 @@ function startMusic() {
             o.frequency.value = freq;
             o.detune.value = Math.random() * 3;
 
-            // Slight vibrato for warmth
             const vib = c.createOscillator();
             vib.type = 'sine';
             vib.frequency.value = 5;
@@ -266,7 +247,6 @@ function startMusic() {
             musicNodes.push({ osc: o, lfo: vib, voiceGain: g });
         });
 
-        // Schedule next loop
         musicNodes._loopTimer = setTimeout(scheduleLoop, loopLen * 1000 - 100);
     }
 
