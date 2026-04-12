@@ -23,6 +23,7 @@ class HUDClass {
         <button class="area-tab" data-area="factory">🏭 Factory</button>
       </div>
       <div class="hud-right">
+        <button class="hud-btn" id="minions-btn" title="Minions">👥</button>
         <button class="hud-btn" id="info-btn" title="How to Play">ℹ️</button>
         <button class="hud-btn" id="story-btn" title="Story Journal">📖</button>
         <button class="hud-btn" id="settings-btn" title="Settings">⚙️</button>
@@ -61,6 +62,11 @@ class HUDClass {
       this._toggleShopPopup(e);
     });
 
+    this.el.querySelector('#minions-btn').addEventListener('click', () => {
+      AudioManager.play('ui-click');
+      GameState.emit('open-minions');
+    });
+
     this.el.querySelector('#story-btn').addEventListener('click', () => {
       AudioManager.play('ui-click');
       GameState.emit('open-story-journal');
@@ -82,6 +88,7 @@ class HUDClass {
     GameState.on('lab-unlocked', () => this._updateLabTab());
     GameState.on('mission-completed', (m) => this._showMissionComplete(m));
     GameState.on('chapter-completed', (c) => this._showChapterComplete(c));
+    GameState.on('minion-captured', (minion) => this._showCapturePopup(minion));
   }
 
   _toggleShopPopup(e) {
@@ -186,6 +193,21 @@ class HUDClass {
     setTimeout(() => el.classList.add('show'), 10);
     setTimeout(() => { el.classList.remove('show'); setTimeout(() => el.remove(), 400); }, 4000);
     this.update();
+  }
+
+  _showCapturePopup(minion) {
+    AudioManager.play('alert');
+    const overlay = document.createElement('div');
+    overlay.className = 'overlay-panel';
+    overlay.style.display = 'flex';
+    overlay.innerHTML = `<div class="panel-content capture-popup">
+      <h2>🚨 Minion Captured!</h2>
+      <p><b>${minion.name}</b> has been captured by Vector!</p>
+      <p>Complete the remaining missions in this chapter to fund a rescue.</p>
+      <button class="btn primary" id="capture-ok">OK</button>
+    </div>`;
+    document.body.appendChild(overlay);
+    overlay.querySelector('#capture-ok').addEventListener('click', () => overlay.remove());
   }
 
   update() {

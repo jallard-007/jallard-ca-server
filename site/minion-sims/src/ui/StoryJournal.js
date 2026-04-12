@@ -34,7 +34,10 @@ class StoryJournalClass {
       </div>`;
 
     // Rescue button for chapter 4
-    if (currentChapter >= 4 && GameState.capturedMinionId && !GameState.storyProgress.flags.rescueFunded) {
+    const rescueAvailable = currentChapter >= 4 && GameState.capturedMinionId
+      && !GameState.storyProgress.flags.rescueFunded
+      && completed.includes('4.4');
+    if (rescueAvailable) {
       const captured = GameState.getMinion(GameState.capturedMinionId);
       html += `<div class="rescue-banner">
         <p>🚨 <b>${captured?.name || 'A Minion'}</b> has been captured by Vector!</p>

@@ -50,13 +50,39 @@ export class FactoryScene extends Phaser.Scene {
       bg.fillRect(x, h * 0.35, 30, 4);
     }
 
-    // Conveyor belt
+    // Conveyor belt frame
+    bg.fillStyle(0x444444, 1);
+    bg.fillRect(0, h * 0.33 - 2, w, 12);
     bg.fillStyle(0x555555, 1);
     bg.fillRect(0, h * 0.33, w, 8);
+    // Conveyor rollers (static marks)
     bg.lineStyle(1, 0x777777, 0.6);
     for (let x = 0; x < w; x += 20) {
       bg.lineBetween(x, h * 0.33, x, h * 0.33 + 8);
     }
+    // Side rails
+    bg.fillStyle(0x666666, 1);
+    bg.fillRect(0, h * 0.33 - 3, w, 2);
+    bg.fillRect(0, h * 0.33 + 9, w, 2);
+
+    // Animated bananas on conveyor belt
+    this._conveyorBananas = [];
+    const beltY = h * 0.33 + 4;
+    for (let i = 0; i < 6; i++) {
+      const banana = this.add.text(i * (w / 5), beltY, '🍌', { fontSize: '18px' })
+        .setOrigin(0.5).setDepth(3);
+      this._conveyorBananas.push(banana);
+      this.tweens.add({
+        targets: banana,
+        x: w + 30,
+        duration: 8000 + i * 200,
+        ease: 'Linear',
+        repeat: -1,
+        onRepeat: () => { banana.x = -30; },
+      });
+    }
+    // Conveyor end chute / collection box
+    const chute = this.add.text(w - 20, beltY, '📦', { fontSize: '22px' }).setOrigin(0.5).setDepth(2);
 
     // Wall girders
     bg.lineStyle(6, 0x555555, 0.4);
@@ -121,7 +147,25 @@ export class FactoryScene extends Phaser.Scene {
       const y = randFloat(h * 0.42, h - 80);
       const sprite = new Minion(this, x, y, mData);
       this.minionSprites.set(mData.id, sprite);
+      // Working animation: repetitive bob
+      this._addWorkingAnim(sprite);
     }
+  }
+
+  _addWorkingAnim(sprite) {
+    if (sprite.getData('workAnim')) return;
+    sprite.setData('workAnim', true);
+    // Rhythmic bob simulating physical work
+    this.tweens.add({
+      targets: sprite,
+      scaleY: { from: 1, to: 0.92 },
+      scaleX: { from: 1, to: 1.04 },
+      angle: { from: -2, to: 2 },
+      yoyo: true,
+      repeat: -1,
+      duration: 400,
+      ease: 'Sine.easeInOut',
+    });
   }
 
   _refreshMinions() {
@@ -151,6 +195,16 @@ export class FactoryScene extends Phaser.Scene {
 
     for (const [, sprite] of this.minionSprites) {
       sprite.update();
+      // Occasional sweat/effort particles
+      if (Math.random() < 0.003) {
+        const sweat = this.add.text(sprite.x + 10, sprite.y - 25, '💦', { fontSize: '12px' })
+          .setOrigin(0.5).setDepth(999);
+        this.tweens.add({
+          targets: sweat, y: sprite.y - 50, alpha: 0,
+          duration: 800,
+          onComplete: () => sweat.destroy(),
+        });
+      }
     }
   }
 

@@ -180,6 +180,7 @@ const chapters = [
             const victim = pickRandom(candidates);
             victim.area = 'captured';
             GameState.capturedMinionId = victim.id;
+            GameState.emit('minion-captured', victim);
           }
         },
         check: () => !!GameState.capturedMinionId,
@@ -387,6 +388,7 @@ class StorySystem {
   }
 
   fundRescue() {
+    if (!GameState.storyProgress.completedMissions.includes('4.4')) return false;
     if (Economy.spendCoins(75)) {
       GameState.storyProgress.flags.rescueFunded = true;
       return true;

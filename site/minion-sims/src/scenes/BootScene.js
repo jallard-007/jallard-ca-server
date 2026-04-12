@@ -11,6 +11,7 @@ import { Wardrobe } from '../ui/Wardrobe.js';
 import { StoryJournal } from '../ui/StoryJournal.js';
 import { Settings } from '../ui/Settings.js';
 import { InfoPanel } from '../ui/InfoPanel.js';
+import { MinionsPanel } from '../ui/MinionsPanel.js';
 
 export class BootScene extends Phaser.Scene {
   constructor() {
@@ -57,6 +58,7 @@ export class BootScene extends Phaser.Scene {
     StoryJournal.create();
     Settings.create();
     InfoPanel.create();
+    MinionsPanel.create();
 
     // Start the yard scene
     this.scene.start('YardScene');

@@ -41,6 +41,12 @@ export const BODY_DIMS = {
   short:  { w: 42, h: 42 },
 };
 
+export const WEIGHT_SCALE = {
+  skinny: 0.78,
+  medium: 1.0,
+  chonky: 1.3,
+};
+
 export const MOOD_EMOJI = {
   happy: '😊', neutral: '😐', sad: '😢', excited: '🤩', angry: '😠',
 };
@@ -50,6 +56,15 @@ export const TRAITS_LIST = [
 ];
 
 export const CLOTHING_ITEMS = {
+  // Hair
+  'spiky-hair':      { slot: 'hair', name: 'Spiky', cost: 5, color: 0x333333 },
+  'curly-hair':      { slot: 'hair', name: 'Curly', cost: 5, color: 0x663300 },
+  'mohawk':          { slot: 'hair', name: 'Mohawk', cost: 10, color: 0xFF0000 },
+  'long-hair':       { slot: 'hair', name: 'Long Hair', cost: 5, color: 0x663300 },
+  'pigtails':        { slot: 'hair', name: 'Pigtails', cost: 10, color: 0xFFD700 },
+  'buzz-cut':        { slot: 'hair', name: 'Buzz Cut', cost: 5, color: 0x333333 },
+  'pompadour':       { slot: 'hair', name: 'Pompadour', cost: 15, color: 0x222222 },
+  'afro':            { slot: 'hair', name: 'Afro', cost: 15, color: 0x333333 },
   // Hats
   'hard-hat':        { slot: 'hat', name: 'Hard Hat', cost: 0, color: 0xFFA500 },
   'crown':           { slot: 'hat', name: 'Crown', cost: 30, color: 0xFFD700 },
@@ -70,7 +85,7 @@ export const CLOTHING_ITEMS = {
   'hawaiian-shirt':    { slot: 'top', name: 'Hawaiian Shirt', cost: 15, color: 0xFF6347 },
   'tuxedo-jacket':     { slot: 'top', name: 'Tuxedo Jacket', cost: 30, color: 0x111111 },
   'gru-logo-tee':      { slot: 'top', name: 'Gru Logo Tee', cost: 20, color: 0x333333 },
-  'maid-top':          { slot: 'top', name: 'Maid Outfit', cost: 25, color: 0x222222 },
+  'maid-top':          { slot: 'top', name: 'Maid Top', cost: 25, color: 0x222222 },
   'striped-shirt':     { slot: 'top', name: 'Striped Shirt', cost: 0, color: 0x336633 },
   'lab-coat':          { slot: 'top', name: 'Lab Coat', cost: 0, color: 0xEEEEEE },
   'spy-suit-top':      { slot: 'top', name: 'Spy Suit Top', cost: 0, color: 0x1a1a1a },
@@ -83,12 +98,14 @@ export const CLOTHING_ITEMS = {
   'kilt':              { slot: 'bottom', name: 'Kilt', cost: 15, color: 0x884422 },
   'spy-suit-bottom':   { slot: 'bottom', name: 'Spy Suit Bottom', cost: 0, color: 0x1a1a1a },
   'vector-bottom':     { slot: 'bottom', name: "Vector's Bottom", cost: 0, color: 0xFF6600 },
+  'maid-skirt':        { slot: 'bottom', name: 'Maid Skirt', cost: 25, color: 0x222222 },
   // Shoes
   'boots':             { slot: 'shoes', name: 'Boots', cost: 10, color: 0x8B4513 },
   'sneakers':          { slot: 'shoes', name: 'Sneakers', cost: 10, color: 0xFFFFFF },
   'clown-shoes':       { slot: 'shoes', name: 'Clown Shoes', cost: 20, color: 0xFF0000 },
   'flip-flops':        { slot: 'shoes', name: 'Flip Flops', cost: 5, color: 0x00BFFF },
   'fancy-shoes':       { slot: 'shoes', name: 'Fancy Shoes', cost: 0, color: 0x111111 },
+  'maid-shoes':        { slot: 'shoes', name: 'Maid Shoes', cost: 25, color: 0x111111 },
   // Gloves
   'rubber-gloves':     { slot: 'gloves', name: 'Rubber Gloves', cost: 10, color: 0xFFFF00 },
   'boxing-gloves':     { slot: 'gloves', name: 'Boxing Gloves', cost: 15, color: 0xCC0000 },
@@ -113,4 +130,4 @@ export function getClothingBySlot(slot) {
     .map(([id, v]) => ({ id, ...v }));
 }
 
-export const SLOT_ORDER = ['hat', 'goggles', 'top', 'bottom', 'shoes', 'gloves', 'accessory'];
+export const SLOT_ORDER = ['hair', 'hat', 'goggles', 'top', 'bottom', 'shoes', 'gloves', 'accessory'];

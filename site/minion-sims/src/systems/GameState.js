@@ -58,7 +58,9 @@ class GameStateManager {
       name: props.name,
       eyeType: props.eyeType || 'two-eye',
       bodyShape: props.bodyShape || 'medium',
+      weight: props.weight || 'medium',
       outfit: {
+        hair: props.hair || null,
         hat: null,
         goggles: props.eyeType === 'one-eye' ? 'default-goggles-1' : 'default-goggles-2',
         top: 'overalls',
@@ -79,6 +81,7 @@ class GameStateManager {
       cooldowns: {},
       skinTone: props.skinTone || '#FFD93D',
       heterochromia: props.heterochromia || false,
+      pinned: false,
     };
     this.minions.push(minion);
     this.emit('minion-added', minion);
@@ -210,7 +213,10 @@ class GameStateManager {
       m.skinTone = m.skinTone || '#FFD93D';
       m.friendship = m.friendship || {};
       m.traits = m.traits || [];
-      if (!m.outfit) m.outfit = { hat: null, goggles: null, top: 'overalls', bottom: 'overalls-bottom', shoes: null, gloves: null, accessory: null };
+      if (!m.outfit) m.outfit = { hair: null, hat: null, goggles: null, top: 'overalls', bottom: 'overalls-bottom', shoes: null, gloves: null, accessory: null };
+      if (m.outfit.hair === undefined) m.outfit.hair = null;
+      if (!m.weight) m.weight = 'medium';
+      if (m.pinned === undefined) m.pinned = false;
     }
 
     // Daily login check

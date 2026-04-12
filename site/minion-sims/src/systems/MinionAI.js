@@ -2,9 +2,9 @@ import { GameState } from './GameState.js';
 import { clamp, randFloat, randInt, getMoodFromValue } from '../utils.js';
 
 const HUNGER_DECAY_INTERVAL = 30000;
-const ENERGY_RECOVERY_INTERVAL = 10000;
-const WANDER_MIN = 2000;
-const WANDER_MAX = 8000;
+const ENERGY_DECAY_INTERVAL = 15000;
+const WANDER_MIN = 6600;
+const WANDER_MAX = 26600;
 const AUTO_INTERACT_CHANCE = 0.1;
 const AUTO_INTERACT_INTERVAL = 3000;
 const MOOD_DECAY_INTERVAL = 60000;
@@ -32,13 +32,14 @@ class MinionAIClass {
       }
     }
 
-    // Energy recovery (idle minions)
-    if (time - this._lastEnergy >= ENERGY_RECOVERY_INTERVAL / speed) {
+    // Energy decay (all non-sleeping minions)
+    if (time - this._lastEnergy >= ENERGY_DECAY_INTERVAL / speed) {
       this._lastEnergy = time;
       for (const m of GameState.minions) {
-        if (m.area !== 'factory' && !m.isSleeping) {
-          m.energy = clamp(m.energy + 1, 0, 100);
-        }
+        if (m.isSleeping) continue;
+        // Factory drains faster
+        const drain = m.area === 'factory' ? 3 : 1;
+        m.energy = clamp(m.energy - drain, 0, 100);
       }
     }
 
@@ -70,7 +71,7 @@ class MinionAIClass {
     if (minionSprites && scene) {
       for (const [id, sprite] of minionSprites) {
         const mData = GameState.getMinion(id);
-        if (!mData || mData.isSleeping) continue;
+        if (!mData || mData.isSleeping || mData.pinned) continue;
         if (mData.area !== GameState.currentArea) continue;
         if (!this._wanderTimers[id] || time >= this._wanderTimers[id]) {
           this._wanderTimers[id] = time + randFloat(WANDER_MIN, WANDER_MAX) / speed;

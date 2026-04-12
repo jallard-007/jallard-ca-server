@@ -34,7 +34,7 @@ class WardrobeClass {
     if (!m) return;
 
     const slotLabels = {
-      hat: '🎩 Hat', goggles: '🥽 Goggles', top: '👕 Top',
+      hair: '💇 Hair', hat: '🎩 Hat', goggles: '🥽 Goggles', top: '👕 Top',
       bottom: '👖 Bottom', shoes: '👟 Shoes', gloves: '🧤 Gloves', accessory: '💎 Accessory',
     };
 
@@ -77,6 +77,7 @@ class WardrobeClass {
     this.el.querySelector('#wdr-close').addEventListener('click', () => this.hide());
     this.el.querySelector('#wdr-clear').addEventListener('click', () => {
       m.outfit = {
+        hair: null,
         hat: null,
         goggles: m.eyeType === 'one-eye' ? 'default-goggles-1' : 'default-goggles-2',
         top: 'overalls', bottom: 'overalls-bottom',

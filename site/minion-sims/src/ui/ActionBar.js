@@ -67,6 +67,25 @@ class ActionBarClass {
       });
       infoRow.appendChild(relBtn);
     }
+    // Pin toggle (stop moving)
+    const pinBtn = document.createElement('button');
+    pinBtn.className = 'action-btn' + (primary.pinned ? ' active-toggle' : '');
+    pinBtn.textContent = primary.pinned ? '📌 Pinned' : '📌 Pin';
+    pinBtn.title = 'Toggle: stop minion from wandering';
+    pinBtn.addEventListener('click', () => {
+      primary.pinned = !primary.pinned;
+      // Stop any current movement tween
+      if (primary.pinned && GameState.activeScene?.minionSprites) {
+        const spr = GameState.activeScene.minionSprites.get(primary.id);
+        if (spr) {
+          GameState.activeScene.tweens.killTweensOf(spr);
+          spr.setData('tweening', false);
+          spr.scaleX = 1; spr.scaleY = 1; spr.angle = 0;
+        }
+      }
+      this.refresh();
+    });
+    infoRow.appendChild(pinBtn);
     // Deselect
     const deselBtn = document.createElement('button');
     deselBtn.className = 'action-btn';
@@ -130,6 +149,40 @@ class ActionBarClass {
         this._dismissTooltip();
         AudioManager.play('ui-click');
         const scene = GameState.activeScene;
+
+        // For pair actions, animate minions walking together first
+        if (action.type === 'pair' && target && scene?.minionSprites) {
+          const sprA = scene.minionSprites.get(primary.id);
+          const sprB = scene.minionSprites.get(target.id);
+          if (sprA && sprB) {
+            const mx = (sprA.x + sprB.x) / 2;
+            const my = (sprA.y + sprB.y) / 2;
+            const gap = 30;
+            const duration = Math.min(600, Math.hypot(sprA.x - sprB.x, sprA.y - sprB.y) * 3);
+            // Stop any existing movement tweens
+            scene.tweens.killTweensOf(sprA);
+            scene.tweens.killTweensOf(sprB);
+            sprA.setData('tweening', true);
+            sprB.setData('tweening', true);
+            // Walk toward each other
+            scene.tweens.add({
+              targets: sprA, x: mx - gap, y: my, duration, ease: 'Sine.easeInOut',
+            });
+            scene.tweens.add({
+              targets: sprB, x: mx + gap, y: my, duration, ease: 'Sine.easeInOut',
+              onComplete: () => {
+                sprA.setData('tweening', false);
+                sprB.setData('tweening', false);
+                const result = action.perform(primary, target, scene);
+                if (result?.message) this._showMessage(result.message);
+                this.refresh();
+                GameState.emit('action-performed', { actionId: action.id, minion: primary, target });
+              },
+            });
+            return;
+          }
+        }
+
         const result = action.perform(primary, target, scene);
         if (result?.message) {
           this._showMessage(result.message);

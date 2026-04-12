@@ -33,6 +33,8 @@ class NurseryClass {
     const defaultEye = Math.random() < 0.5 ? p1.eyeType : p2.eyeType;
     const shapes = ['tall', 'medium', 'short'];
     const defaultShape = Math.random() < 0.5 ? p1.bodyShape : p2.bodyShape;
+    const weights = ['skinny', 'medium', 'chonky'];
+    const defaultWeight = Math.random() < 0.5 ? (p1.weight || 'medium') : (p2.weight || 'medium');
 
     // Available traits
     const allTraits = [...TRAITS_LIST];
@@ -65,6 +67,12 @@ class NurseryClass {
           <label>Body Shape
             <select id="nursery-shape">
               ${shapes.map(s => `<option value="${s}" ${s === defaultShape ? 'selected' : ''}>${s.charAt(0).toUpperCase() + s.slice(1)}</option>`).join('')}
+            </select>
+          </label>
+
+          <label>Weight
+            <select id="nursery-weight">
+              ${weights.map(w => `<option value="${w}" ${w === defaultWeight ? 'selected' : ''}>${w.charAt(0).toUpperCase() + w.slice(1)}</option>`).join('')}
             </select>
           </label>
 
@@ -111,6 +119,7 @@ class NurseryClass {
 
     const eyeType = this.el.querySelector('#nursery-eye').value;
     const bodyShape = this.el.querySelector('#nursery-shape').value;
+    const weight = this.el.querySelector('#nursery-weight').value;
     const traits = [...this.el.querySelectorAll('input[name="trait"]:checked')].map(cb => cb.value);
 
     if (traits.length === 0) { errorEl.textContent = 'Pick at least 1 trait.'; return; }
@@ -126,7 +135,7 @@ class NurseryClass {
     GameState.storyProgress.flags.procreationDone = true;
 
     const newMinion = GameState.createMinion({
-      name, eyeType, bodyShape,
+      name, eyeType, bodyShape, weight,
       traits,
       mood: 'excited',
       hunger: 80,
