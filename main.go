@@ -23,7 +23,10 @@ func realMain() int {
 	defer stop()
 
 	mux := http.NewServeMux()
-	mux.Handle("/", http.FileServer(http.Dir("./dist")))
+	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Cache-Control", "no-store")
+		http.FileServer(http.Dir("./dist"))
+	})
 
 	srv := api.NewServer(mux)
 

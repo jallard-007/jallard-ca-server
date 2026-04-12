@@ -108,7 +108,7 @@ New actions are registered in an **ActionRegistry** (simple array/map). The UI d
 | **High Five** | None | +5 friendship, brief animation | Slap SFX |
 | **Dance Together** | None | +10 friendship, +10 mood for both, plays music snippet | Minion dance music |
 | **Argue** | Friendship < 20 OR mood == `angry` | -10 friendship, both become `angry`, storm cloud particles | Bickering SFX |
-| **Gift Banana** | Giver has ≥1 banana in inventory | +20 friendship, receiver hunger +30 | Nom SFX |
+| **Gift Banana** | Player has ≥1 banana | +20 friendship, receiver hunger +30 | Nom SFX |
 | **Play Fight** | Energy ≥ 20 | +8 friendship, -10 energy each, random chance one becomes `sad` (loser) | Bonk SFX |
 
 #### Solo Actions (single Minion)
@@ -416,7 +416,7 @@ The story is divided into **5 Chapters**, each with **4–5 missions**. Completi
 ```json
 {
   "version": 1,
-  "bananCoins": 142,
+  "bananaCoins": 142,
   "bananas": 12,
   "minions": [ { ...minionProperties } ],
   "storyProgress": {
@@ -521,7 +521,7 @@ site/minion-sims/
 │       └── clothing/      # Individual clothing item images
 ├── css/
 │   └── style.css          # UI overlay styles (HUD, modals, action bar)
-└── dist/                  # Build output (git-ignored)
+# Build output goes to ../../dist/minion-sims/ (git-ignored, served by Go server)
 ```
 
 ### 14.2 Phaser Game Config
@@ -656,9 +656,10 @@ import { defineConfig } from 'vite';
 export default defineConfig({
   base: '/minion-sims/',     // URL base path on Go server
   build: {
-    outDir: 'dist',          // Output directory
+    outDir: '../../dist/minion-sims',  // Output to Go server's served directory
     assetsDir: 'assets',     // JS/CSS chunks go here
     sourcemap: false,        // Enable for debugging
+    emptyOutDir: true,       // Clean output dir before build
   },
   server: {
     port: 5173,              // Dev server port
@@ -673,8 +674,7 @@ export default defineConfig({
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview",
-    "deploy": "vite build && echo 'Build complete. Serve dist/ from Go server.'"
+    "preview": "vite preview"
   }
 }
 ```

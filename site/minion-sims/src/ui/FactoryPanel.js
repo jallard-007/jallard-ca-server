@@ -1,0 +1,109 @@
+import { GameState } from '../systems/GameState.js';
+import { AudioManager } from '../audio/AudioManager.js';
+
+class FactoryPanelClass {
+  constructor() {
+    this.el = null;
+  }
+
+  create() {
+    this.el = document.createElement('div');
+    this.el.id = 'factory-panel';
+    this.el.className = 'overlay-panel';
+    this.el.style.display = 'none';
+    document.body.appendChild(this.el);
+
+    GameState.on('open-factory', () => this.show());
+    GameState.on('close-factory', () => this.hide());
+  }
+
+  show() {
+    this.el.style.display = 'flex';
+    this._render();
+    this._interval = setInterval(() => this._render(), 5000);
+
+    // Close on backdrop click
+    this._onBackdropClick = (e) => {
+      if (e.target === this.el) this.hide();
+    };
+    this.el.addEventListener('click', this._onBackdropClick);
+  }
+
+  hide() {
+    this.el.style.display = 'none';
+    clearInterval(this._interval);
+    if (this._onBackdropClick) {
+      this.el.removeEventListener('click', this._onBackdropClick);
+      this._onBackdropClick = null;
+    }
+  }
+
+  _render() {
+    const factoryMinions = GameState.getMinionsInArea('factory');
+    let html = `<div class="panel-content">
+      <div class="panel-header">
+        <h2>🏭 The Factory</h2>
+        <button class="btn" id="factory-close">✖ Close</button>
+      </div>
+      <p class="factory-info">Minions here earn 1 Banana Coin per minute.</p>`;
+
+    if (factoryMinions.length === 0) {
+      html += '<p class="empty">No Minions in the factory. Send some from the Yard!</p>';
+    } else {
+      html += '<div class="factory-roster">';
+      for (const m of factoryMinions) {
+        const log = GameState.factoryLog[m.id];
+        let elapsed = '';
+        if (log) {
+          const secs = Math.floor((Date.now() - log.enteredAt) / 1000);
+          const mins = Math.floor(secs / 60);
+          const s = secs % 60;
+          elapsed = `${mins}m ${s}s`;
+        }
+        html += `
+          <div class="factory-minion" data-id="${m.id}">
+            <span class="fm-name">${m.name}</span>
+            <span class="fm-time">⏱ ${elapsed}</span>
+            <button class="action-btn recall-btn" data-id="${m.id}">📢 Recall</button>
+          </div>`;
+      }
+      html += '</div>';
+    }
+    html += '</div>';
+    this.el.innerHTML = html;
+
+    // Close button
+    const closeBtn = this.el.querySelector('#factory-close');
+    if (closeBtn) {
+      closeBtn.addEventListener('click', () => this.hide());
+    }
+
+    // Recall buttons
+    this.el.querySelectorAll('.recall-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        AudioManager.play('whistle');
+        const id = btn.dataset.id;
+        const m = GameState.getMinion(id);
+        if (m) {
+          // Track factory time for story
+          if (GameState.factoryLog[m.id]) {
+            const elapsed = Date.now() - GameState.factoryLog[m.id].enteredAt;
+            const flags = GameState.storyProgress.flags;
+            flags.maxFactoryTime = Math.max(flags.maxFactoryTime || 0, elapsed);
+          }
+          m.area = 'yard';
+          delete GameState.factoryLog[m.id];
+          GameState.emit('refresh-minions');
+        }
+        this._render();
+      });
+    });
+  }
+
+  destroy() {
+    clearInterval(this._interval);
+    if (this.el) this.el.remove();
+  }
+}
+
+export const FactoryPanel = new FactoryPanelClass();

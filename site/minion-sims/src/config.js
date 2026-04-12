@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { BootScene } from './scenes/BootScene.js';
 import { YardScene } from './scenes/YardScene.js';
 import { LabScene } from './scenes/LabScene.js';
+import { FactoryScene } from './scenes/FactoryScene.js';
 
 export const gameConfig = {
   type: Phaser.AUTO,
@@ -12,7 +13,7 @@ export const gameConfig = {
     mode: Phaser.Scale.RESIZE,
     autoCenter: Phaser.Scale.CENTER_BOTH,
   },
-  scene: [BootScene, YardScene, LabScene],
+  scene: [BootScene, YardScene, LabScene, FactoryScene],
   physics: {
     default: 'arcade',
     arcade: { debug: false },
