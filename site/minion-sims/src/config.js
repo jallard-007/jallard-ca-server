@@ -16,7 +16,7 @@ export const gameConfig = {
   scene: [BootScene, YardScene, LabScene, FactoryScene],
   fps: {
     target: 30,
-    forceSetTimeOut: true,
+    limit: 30,
   },
   backgroundColor: '#87CEEB',
 };
