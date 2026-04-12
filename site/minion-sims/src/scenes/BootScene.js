@@ -50,7 +50,7 @@ export class BootScene extends Phaser.Scene {
     Economy.claimDailyBonus();
 
     // Create DOM UI overlays (once, persistent across scenes)
-    HUD.create();
+    HUD.create({ isNewGame: !loaded });
     ActionBar.create();
     FactoryPanel.create();
     Nursery.create();

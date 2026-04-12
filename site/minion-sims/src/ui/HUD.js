@@ -8,7 +8,7 @@ class HUDClass {
     this.el = null;
   }
 
-  create() {
+  create({ isNewGame = false } = {}) {
     this.el = document.createElement('div');
     this.el.id = 'hud';
     this.el.innerHTML = `
@@ -45,6 +45,7 @@ class HUDClass {
 
     this._bind();
     this.update();
+    if (isNewGame) this._showNewGameTip();
   }
 
   _bind() {
@@ -228,6 +229,56 @@ class HUDClass {
 
     // Freeplay+ badge
     this.badge.style.display = GameState.freeplusMode ? 'block' : 'none';
+  }
+
+  _showNewGameTip() {
+    // Wait a frame so the info button is laid out
+    requestAnimationFrame(() => {
+      const infoBtn = this.el.querySelector('#info-btn');
+      if (!infoBtn) return;
+      const rect = infoBtn.getBoundingClientRect();
+
+      const tip = document.createElement('div');
+      tip.id = 'new-game-tip';
+      tip.style.cssText = `
+        position: fixed;
+        background: rgba(20,20,40,0.97);
+        border: 2px solid #FFD93D;
+        border-radius: 10px;
+        color: #FFD93D;
+        font-size: 13px;
+        padding: 10px 14px;
+        z-index: 400;
+        pointer-events: auto;
+        max-width: 200px;
+        line-height: 1.5;
+        text-align: center;
+      `;
+      tip.innerHTML = `<b>New to Minion Sims?</b><br>Tap <b>ℹ️</b> to learn how to play!<br><br><button id="new-game-tip-ok" style="background:rgba(255,217,61,0.2);border:1px solid #FFD93D;color:#FFD93D;padding:4px 14px;border-radius:6px;cursor:pointer;font-size:12px;">Got it</button>`;
+
+      // Arrow element
+      const arrow = document.createElement('div');
+      arrow.style.cssText = `
+        position: absolute;
+        top: -10px;
+        right: 18px;
+        width: 0;
+        height: 0;
+        border-left: 8px solid transparent;
+        border-right: 8px solid transparent;
+        border-bottom: 10px solid #FFD93D;
+      `;
+      tip.appendChild(arrow);
+      document.body.appendChild(tip);
+
+      // Position below the info button
+      const tipW = 200;
+      const left = Math.max(4, rect.right - tipW + 8);
+      tip.style.top = `${rect.bottom + 6}px`;
+      tip.style.left = `${left}px`;
+
+      tip.querySelector('#new-game-tip-ok').addEventListener('click', () => tip.remove());
+    });
   }
 
   destroy() {
