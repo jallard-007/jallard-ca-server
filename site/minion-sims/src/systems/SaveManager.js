@@ -5,7 +5,19 @@ const AUTO_SAVE_INTERVAL = 30000;
 
 class SaveManagerClass {
   constructor() {
-    this._lastAutoSave = 0;
+    this._intervalId = null;
+  }
+
+  start() {
+    this.stop();
+    this._intervalId = setInterval(() => this.save(), AUTO_SAVE_INTERVAL);
+  }
+
+  stop() {
+    if (this._intervalId) {
+      clearInterval(this._intervalId);
+      this._intervalId = null;
+    }
   }
 
   save() {
@@ -34,6 +46,7 @@ class SaveManagerClass {
           const coinsEarned = Math.floor(elapsed / 60) * factoryMinions.length;
           if (coinsEarned > 0) {
             GameState.bananaCoins += coinsEarned;
+            GameState.emit('coins-changed', GameState.bananaCoins);
           }
         }
       }
@@ -44,12 +57,8 @@ class SaveManagerClass {
     }
   }
 
-  autoSave(time) {
-    if (time - this._lastAutoSave >= AUTO_SAVE_INTERVAL) {
-      this.save();
-      this._lastAutoSave = time;
-    }
-  }
+  /** @deprecated Scene update() no longer needs to call this — auto-save is interval-based */
+  autoSave() {}
 
   reset() {
     localStorage.removeItem(SAVE_KEY);

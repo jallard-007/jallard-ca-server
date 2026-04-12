@@ -1,6 +1,6 @@
 import { GameState } from './GameState.js';
 import { Economy } from './Economy.js';
-import { clamp, getMoodFromValue } from '../utils.js';
+import { getMoodFromValue } from '../utils.js';
 import { AudioManager } from '../audio/AudioManager.js';
 
 /* ── helpers ── */
@@ -108,12 +108,13 @@ ActionRegistry.register({
     return { ok: f >= 30, reason: f < 30 ? 'Friendship must be ≥ 30' : '' };
   },
   perform(a, b, scene) {
-    a.friendship[b.id] = clamp((a.friendship[b.id] || 0) + 15, 0, 100);
-    b.friendship[a.id] = clamp((b.friendship[a.id] || 0) + 15, 0, 100);
-    a.moodValue = 70; b.moodValue = 70;
+    GameState.setFriendship(a.id, b.id, (a.friendship[b.id] || 0) + 15);
+    GameState.setFriendship(b.id, a.id, (b.friendship[a.id] || 0) + 15);
+    GameState.setMinionMood(a.id, 70); GameState.setMinionMood(b.id, 70);
     setCooldown(a, 'kiss', this.cooldown);
     setCooldown(b, 'kiss', this.cooldown);
     GameState.storyProgress.flags.kissPerformed = true;
+    GameState.emit('state-changed');
     const mp = midpoint(scene, a, b);
     if (mp) { particleBurst(scene, mp.x, mp.y, '❤️', 6); floatText(scene, mp.x, mp.y - 20, '💋'); }
     return { success: true, message: `${a.name} kissed ${b.name}!` };
@@ -219,11 +220,12 @@ ActionRegistry.register({
     return { ok: true, reason: '' };
   },
   perform(a, b, scene) {
-    a.friendship[b.id] = clamp((a.friendship[b.id] || 0) + 5, 0, 100);
-    b.friendship[a.id] = clamp((b.friendship[a.id] || 0) + 5, 0, 100);
+    GameState.setFriendship(a.id, b.id, (a.friendship[b.id] || 0) + 5);
+    GameState.setFriendship(b.id, a.id, (b.friendship[a.id] || 0) + 5);
     setCooldown(a, 'highfive', this.cooldown);
     setCooldown(b, 'highfive', this.cooldown);
     GameState.storyProgress.flags.highFivePerformed = true;
+    GameState.emit('state-changed');
     const mp = midpoint(scene, a, b);
     if (mp) { particleBurst(scene, mp.x, mp.y, '⭐', 5); floatText(scene, mp.x, mp.y - 20, '✋'); }
     return { success: true, message: `${a.name} and ${b.name} high-fived!` };
@@ -237,13 +239,14 @@ ActionRegistry.register({
     return { ok: true, reason: '' };
   },
   perform(a, b, scene) {
-    a.friendship[b.id] = clamp((a.friendship[b.id] || 0) + 10, 0, 100);
-    b.friendship[a.id] = clamp((b.friendship[a.id] || 0) + 10, 0, 100);
-    a.moodValue = clamp(a.moodValue + 10, 0, 100);
-    b.moodValue = clamp(b.moodValue + 10, 0, 100);
+    GameState.setFriendship(a.id, b.id, (a.friendship[b.id] || 0) + 10);
+    GameState.setFriendship(b.id, a.id, (b.friendship[a.id] || 0) + 10);
+    GameState.setMinionMood(a.id, a.moodValue + 10);
+    GameState.setMinionMood(b.id, b.moodValue + 10);
     setCooldown(a, 'dance-together', this.cooldown);
     setCooldown(b, 'dance-together', this.cooldown);
     if (GameState.currentArea === 'lab') GameState.storyProgress.flags.dancedInLab = true;
+    GameState.emit('state-changed');
     const mp = midpoint(scene, a, b);
     if (mp) { particleBurst(scene, mp.x, mp.y, '🎵', 6); }
     // Bounce animation
@@ -269,9 +272,9 @@ ActionRegistry.register({
     return { ok: false, reason: 'Friendship must be < 20, or one must be angry' };
   },
   perform(a, b, scene) {
-    a.friendship[b.id] = clamp((a.friendship[b.id] || 0) - 10, 0, 100);
-    b.friendship[a.id] = clamp((b.friendship[a.id] || 0) - 10, 0, 100);
-    a.moodValue = 10; b.moodValue = 10;
+    GameState.setFriendship(a.id, b.id, (a.friendship[b.id] || 0) - 10);
+    GameState.setFriendship(b.id, a.id, (b.friendship[a.id] || 0) - 10);
+    GameState.setMinionMood(a.id, 10); GameState.setMinionMood(b.id, 10);
     setCooldown(a, 'argue', this.cooldown);
     setCooldown(b, 'argue', this.cooldown);
     const mp = midpoint(scene, a, b);
@@ -289,9 +292,9 @@ ActionRegistry.register({
   },
   perform(a, b, scene) {
     Economy.useBanana();
-    a.friendship[b.id] = clamp((a.friendship[b.id] || 0) + 20, 0, 100);
-    b.friendship[a.id] = clamp((b.friendship[a.id] || 0) + 20, 0, 100);
-    b.hunger = clamp(b.hunger + 30, 0, 100);
+    GameState.setFriendship(a.id, b.id, (a.friendship[b.id] || 0) + 20);
+    GameState.setFriendship(b.id, a.id, (b.friendship[a.id] || 0) + 20);
+    GameState.setMinionHunger(b.id, b.hunger + 30);
     setCooldown(a, 'gift-banana', this.cooldown);
     const pos = getSpritePos(scene, b.id);
     if (pos) { floatText(scene, pos.x, pos.y - 30, '🍌'); }
@@ -307,15 +310,15 @@ ActionRegistry.register({
     return { ok: true, reason: '' };
   },
   perform(a, b, scene) {
-    a.friendship[b.id] = clamp((a.friendship[b.id] || 0) + 8, 0, 100);
-    b.friendship[a.id] = clamp((b.friendship[a.id] || 0) + 8, 0, 100);
-    a.energy = clamp(a.energy - 10, 0, 100);
-    b.energy = clamp(b.energy - 10, 0, 100);
+    GameState.setFriendship(a.id, b.id, (a.friendship[b.id] || 0) + 8);
+    GameState.setFriendship(b.id, a.id, (b.friendship[a.id] || 0) + 8);
+    GameState.setMinionEnergy(a.id, a.energy - 10);
+    GameState.setMinionEnergy(b.id, b.energy - 10);
     setCooldown(a, 'play-fight', this.cooldown);
     setCooldown(b, 'play-fight', this.cooldown);
     // Random loser
     const loser = Math.random() < 0.5 ? a : b;
-    if (Math.random() < 0.3) loser.moodValue = 30;
+    if (Math.random() < 0.3) GameState.setMinionMood(loser.id, 30);
     const mp = midpoint(scene, a, b);
     if (mp) { particleBurst(scene, mp.x, mp.y, '💥', 4); floatText(scene, mp.x, mp.y - 20, '🥊'); }
     return { success: true, message: `${a.name} and ${b.name} play-fought!` };
@@ -333,13 +336,14 @@ ActionRegistry.register({
   },
   perform(m, _, scene) {
     Economy.useBanana();
-    m.hunger = clamp(m.hunger + 30, 0, 100);
-    m.moodValue = 70;
+    GameState.setMinionHunger(m.id, m.hunger + 30);
+    GameState.setMinionMood(m.id, 70);
     setCooldown(m, 'feed', this.cooldown);
     // Track fed minions for story
     const flags = GameState.storyProgress.flags;
     if (!flags.fedMinionIds) flags.fedMinionIds = [];
     if (!flags.fedMinionIds.includes(m.id)) flags.fedMinionIds.push(m.id);
+    GameState.emit('state-changed');
     const pos = getSpritePos(scene, m.id);
     if (pos) { floatText(scene, pos.x, pos.y - 30, '🍌 Nom!'); }
     return { success: true, message: `Fed ${m.name}!` };
@@ -354,9 +358,9 @@ ActionRegistry.register({
     return { ok: true, reason: '' };
   },
   perform(m, _, scene) {
-    m.isSleeping = true;
+    GameState.setMinionSleeping(m.id, true);
     const speed = GameState.settings.gameSpeed;
-    setTimeout(() => { m.isSleeping = false; m.energy = 100; }, 30000 / speed);
+    setTimeout(() => { GameState.setMinionSleeping(m.id, false); GameState.setMinionEnergy(m.id, 100); }, 30000 / speed);
     const pos = getSpritePos(scene, m.id);
     if (pos) { floatText(scene, pos.x, pos.y - 30, '💤'); }
     return { success: true, message: `${m.name} is napping...` };
@@ -379,9 +383,8 @@ ActionRegistry.register({
     return { ok: true, reason: '' };
   },
   perform(m) {
-    m.area = 'factory';
+    GameState.setMinionArea(m.id, 'factory');
     GameState.factoryLog[m.id] = { enteredAt: Date.now() };
-    GameState.emit('minion-moved', m);
     GameState.emit('refresh-minions');
     GameState.clearSelection();
     return { success: true, message: `${m.name} sent to factory!` };
@@ -395,7 +398,7 @@ ActionRegistry.register({
     return { ok: true, reason: '' };
   },
   perform(m) {
-    m.area = 'yard';
+    GameState.setMinionArea(m.id, 'yard');
     // Track factory time for story
     if (GameState.factoryLog[m.id]) {
       const elapsed = Date.now() - GameState.factoryLog[m.id].enteredAt;
@@ -403,7 +406,6 @@ ActionRegistry.register({
       flags.maxFactoryTime = Math.max(flags.maxFactoryTime || 0, elapsed);
     }
     delete GameState.factoryLog[m.id];
-    GameState.emit('minion-moved', m);
     GameState.emit('refresh-minions');
     GameState.clearSelection();
     return { success: true, message: `${m.name} recalled from factory!` };
@@ -418,9 +420,9 @@ ActionRegistry.register({
     return { ok: true, reason: '' };
   },
   perform(m) {
-    m.area = 'lab';
+    GameState.setMinionArea(m.id, 'lab');
     GameState.storyProgress.flags.minionSentToLab = true;
-    GameState.emit('minion-moved', m);
+    GameState.emit('state-changed');
     GameState.emit('refresh-minions');
     GameState.clearSelection();
     return { success: true, message: `${m.name} sent to Gru's Lab!` };
@@ -434,8 +436,7 @@ ActionRegistry.register({
     return { ok: true, reason: '' };
   },
   perform(m) {
-    m.area = 'yard';
-    GameState.emit('minion-moved', m);
+    GameState.setMinionArea(m.id, 'yard');
     GameState.emit('refresh-minions');
     GameState.clearSelection();
     return { success: true, message: `${m.name} sent to the Yard!` };
@@ -456,10 +457,11 @@ ActionRegistry.register({
     // Nearby minions gain mood
     const area = m.area;
     const nearby = GameState.getMinionsInArea(area).filter(n => n.id !== m.id);
-    for (const n of nearby) n.moodValue = clamp(n.moodValue + 5, 0, 100);
+    for (const n of nearby) GameState.setMinionMood(n.id, n.moodValue + 5);
     const flags = GameState.storyProgress.flags;
     flags.singPerformed = true;
     flags.singAreaCount = nearby.length + 1;
+    GameState.emit('state-changed');
     const pos = getSpritePos(scene, m.id);
     if (pos) { particleBurst(scene, pos.x, pos.y - 20, '🎵', 5); floatText(scene, pos.x, pos.y - 40, '🎤'); }
     return { success: true, message: `${m.name} sang! Nearby minions feel better.` };
@@ -473,7 +475,7 @@ ActionRegistry.register({
     return { ok: true, reason: '' };
   },
   perform(m, _, scene) {
-    m.moodValue = clamp(m.moodValue + 10, 0, 100);
+    GameState.setMinionMood(m.id, m.moodValue + 10);
     setCooldown(m, 'tickle', this.cooldown);
     const pos = getSpritePos(scene, m.id);
     if (pos) { floatText(scene, pos.x, pos.y - 30, '😂'); }
@@ -492,7 +494,7 @@ ActionRegistry.register({
     return { ok: true, reason: '' };
   },
   perform(m, _, scene) {
-    m.moodValue = 30;
+    GameState.setMinionMood(m.id, 30);
     setCooldown(m, 'scold', this.cooldown);
     const pos = getSpritePos(scene, m.id);
     if (pos) { floatText(scene, pos.x, pos.y - 30, '😢'); }
@@ -511,7 +513,7 @@ ActionRegistry.register({
     const area = m.area;
     const all = GameState.getMinionsInArea(area);
     for (const n of all) {
-      n.moodValue = clamp(n.moodValue + 15, 0, 100);
+      GameState.setMinionMood(n.id, n.moodValue + 15);
       if (scene) {
         const spr = scene.minionSprites?.get(n.id);
         if (spr) scene.tweens.add({ targets: spr, scaleY: 1.15, yoyo: true, repeat: 5, duration: 200 });
@@ -519,6 +521,7 @@ ActionRegistry.register({
     }
     GameState.storyProgress.flags.groupDancePerformed = true;
     GameState.storyProgress.flags.groupDanceMinionCount = all.length;
+    GameState.emit('state-changed');
     if (scene) {
       const w = scene.scale.width, h = scene.scale.height;
       for (let i = 0; i < 10; i++) {

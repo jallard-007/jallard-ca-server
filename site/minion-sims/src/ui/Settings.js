@@ -72,25 +72,25 @@ class SettingsClass {
     this.el.querySelector('#settings-close').addEventListener('click', () => this.hide());
 
     this.el.querySelector('#music-vol').addEventListener('input', (e) => {
-      s.musicVolume = parseInt(e.target.value);
-      this.el.querySelector('#music-val').textContent = s.musicVolume + '%';
+      GameState.setSetting('musicVolume', parseInt(e.target.value));
+      this.el.querySelector('#music-val').textContent = GameState.settings.musicVolume + '%';
     });
 
     this.el.querySelector('#sfx-vol').addEventListener('input', (e) => {
-      s.sfxVolume = parseInt(e.target.value);
-      this.el.querySelector('#sfx-val').textContent = s.sfxVolume + '%';
+      GameState.setSetting('sfxVolume', parseInt(e.target.value));
+      this.el.querySelector('#sfx-val').textContent = GameState.settings.sfxVolume + '%';
     });
 
     this.el.querySelector('#show-mood').addEventListener('change', (e) => {
-      s.showMoodBubbles = e.target.checked;
+      GameState.setSetting('showMoodBubbles', e.target.checked);
     });
 
     this.el.querySelector('#show-names').addEventListener('change', (e) => {
-      s.showNameLabels = e.target.checked;
+      GameState.setSetting('showNameLabels', e.target.checked);
     });
 
     this.el.querySelector('#game-speed').addEventListener('change', (e) => {
-      s.gameSpeed = parseFloat(e.target.value);
+      GameState.setSetting('gameSpeed', parseFloat(e.target.value));
     });
 
     this.el.querySelector('#save-now').addEventListener('click', () => {

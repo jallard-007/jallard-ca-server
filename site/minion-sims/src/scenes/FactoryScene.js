@@ -1,9 +1,6 @@
 import Phaser from 'phaser';
 import { GameState } from '../systems/GameState.js';
 import { MinionAI } from '../systems/MinionAI.js';
-import { SaveManager } from '../systems/SaveManager.js';
-import { Story } from '../systems/Story.js';
-import { Economy } from '../systems/Economy.js';
 import { Minion } from '../objects/Minion.js';
 import { randFloat } from '../utils.js';
 
@@ -192,9 +189,6 @@ export class FactoryScene extends Phaser.Scene {
 
   update(time, delta) {
     MinionAI.update(time, delta, this.minionSprites, this);
-    Story.checkMissions(time);
-    SaveManager.autoSave(time);
-    Economy.updateFactory(time);
 
     for (const [, sprite] of this.minionSprites) {
       sprite.update();

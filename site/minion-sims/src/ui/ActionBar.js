@@ -73,7 +73,7 @@ class ActionBarClass {
     pinBtn.textContent = primary.pinned ? '📌 Pinned' : '📌 Pin';
     pinBtn.title = 'Toggle: stop minion from wandering';
     pinBtn.addEventListener('click', () => {
-      primary.pinned = !primary.pinned;
+      GameState.setMinionPinned(primary.id, !primary.pinned);
       // Stop any current movement tween
       if (primary.pinned && GameState.activeScene?.minionSprites) {
         const spr = GameState.activeScene.minionSprites.get(primary.id);

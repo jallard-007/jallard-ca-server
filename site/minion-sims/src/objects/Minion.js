@@ -40,6 +40,35 @@ export class Minion extends Phaser.GameObjects.Container {
 
     // Enable drag on this scene's input
     scene.input.setDraggable(this);
+
+    // Subscribe to GameState events for reactive UI updates
+    this._unsubs = [
+      GameState.on('minion-mood-changed', ({ id, mood }) => {
+        if (id === this.minionId) this._updateMoodText(mood);
+      }),
+      GameState.on('minion-sleep-changed', ({ id, isSleeping }) => {
+        if (id === this.minionId) {
+          this._updateSleepText(isSleeping);
+          this._updateMoodVisible(GameState.settings.showMoodBubbles, isSleeping);
+        }
+      }),
+      GameState.on('selection-changed', () => {
+        const isSelected = GameState.selectedMinionId === this.minionId;
+        const isSecondary = GameState.secondMinionId === this.minionId;
+        this._updateSelectionRing(isSelected, isSecondary);
+      }),
+      GameState.on('setting-changed', ({ key, value }) => {
+        if (key === 'showMoodBubbles') {
+          const d = this.mData;
+          this._updateMoodVisible(value, d?.isSleeping);
+        } else if (key === 'showNameLabels') {
+          this._updateNameLabel(value);
+        }
+      }),
+      GameState.on('outfit-changed', ({ id }) => {
+        if (id === this.minionId) this.redraw();
+      }),
+    ];
   }
 
   get mData() {
@@ -734,37 +763,49 @@ export class Minion extends Phaser.GameObjects.Container {
   }
 
   update() {
-    const d = this.mData;
-    if (!d) return;
+    if (!this.mData) return;
 
-    // Update visuals
-    const mood = getMoodFromValue(d.moodValue);
-    this.moodBubble.setText(MOOD_EMOJI[mood]);
-    this.moodBubble.setVisible(GameState.settings.showMoodBubbles && !d.isSleeping);
-    this.nameLabel.setVisible(GameState.settings.showNameLabels);
-    this.sleepText.setVisible(d.isSleeping);
-
-    // Selection highlight — only redraw when selection state changes
-    const isSelected = GameState.selectedMinionId === this.minionId;
-    const isSecondary = GameState.secondMinionId === this.minionId;
-    const selState = isSelected ? 1 : isSecondary ? 2 : 0;
-    if (selState !== this._lastSelState) {
-      this._lastSelState = selState;
-      this.ring.clear();
-      if (isSelected) {
-        this.ring.lineStyle(3, 0x00ff00, 0.8);
-        this.ring.strokeCircle(0, 0, 42);
-      } else if (isSecondary) {
-        this.ring.lineStyle(3, 0x00aaff, 0.8);
-        this.ring.strokeCircle(0, 0, 42);
-      }
+    // Depth by Y — kept in update() since position changes via tweens
+    const depthY = Math.floor(this.y);
+    if (depthY !== this._lastDepthY) {
+      this._lastDepthY = depthY;
+      this._updateDepth(depthY);
     }
+  }
 
-    // Depth by Y
-    this.setDepth(Math.floor(this.y) + 10);
+  _updateMoodText(mood) {
+    this.moodBubble.setText(MOOD_EMOJI[mood]);
+  }
+
+  _updateMoodVisible(showMood, sleeping) {
+    this.moodBubble.setVisible(showMood && !sleeping);
+  }
+
+  _updateSleepText(sleeping) {
+    this.sleepText.setVisible(sleeping);
+  }
+
+  _updateNameLabel(showNames) {
+    this.nameLabel.setVisible(showNames);
+  }
+
+  _updateSelectionRing(isSelected, isSecondary) {
+    this.ring.clear();
+    if (isSelected) {
+      this.ring.lineStyle(3, 0x00ff00, 0.8);
+      this.ring.strokeCircle(0, 0, 42);
+    } else if (isSecondary) {
+      this.ring.lineStyle(3, 0x00aaff, 0.8);
+      this.ring.strokeCircle(0, 0, 42);
+    }
+  }
+
+  _updateDepth(depthY) {
+    this.setDepth(depthY + 10);
   }
 
   destroy() {
+    if (this._unsubs) this._unsubs.forEach(fn => fn());
     super.destroy(true);
   }
 }

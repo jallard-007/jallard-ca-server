@@ -49,6 +49,10 @@ export class BootScene extends Phaser.Scene {
     // Daily login bonus
     Economy.claimDailyBonus();
 
+    // Start global interval timers (auto-save, factory coin ticks)
+    SaveManager.start();
+    Economy.startFactory();
+
     // Create DOM UI overlays (once, persistent across scenes)
     HUD.create({ isNewGame: !loaded });
     ActionBar.create();

@@ -76,13 +76,15 @@ class WardrobeClass {
     // Event listeners
     this.el.querySelector('#wdr-close').addEventListener('click', () => this.hide());
     this.el.querySelector('#wdr-clear').addEventListener('click', () => {
-      m.outfit = {
-        hair: null,
-        hat: null,
-        goggles: m.eyeType === 'one-eye' ? 'default-goggles-1' : 'default-goggles-2',
-        top: 'overalls', bottom: 'overalls-bottom',
-        shoes: null, gloves: null, accessory: null,
-      };
+      const defaultGoggles = m.eyeType === 'one-eye' ? 'default-goggles-1' : 'default-goggles-2';
+      GameState.setMinionOutfit(m.id, 'hair', null);
+      GameState.setMinionOutfit(m.id, 'hat', null);
+      GameState.setMinionOutfit(m.id, 'goggles', defaultGoggles);
+      GameState.setMinionOutfit(m.id, 'top', 'overalls');
+      GameState.setMinionOutfit(m.id, 'bottom', 'overalls-bottom');
+      GameState.setMinionOutfit(m.id, 'shoes', null);
+      GameState.setMinionOutfit(m.id, 'gloves', null);
+      GameState.setMinionOutfit(m.id, 'accessory', null);
       this._refreshMinion();
       this._render();
     });
@@ -113,12 +115,13 @@ class WardrobeClass {
 
         // Toggle equip
         if (m.outfit[slot] === itemId) {
-          m.outfit[slot] = null;
+          GameState.setMinionOutfit(m.id, slot, null);
         } else {
-          m.outfit[slot] = itemId;
+          GameState.setMinionOutfit(m.id, slot, itemId);
         }
         AudioManager.play('zipper');
         GameState.storyProgress.flags.clothingEquipped = true;
+        GameState.emit('state-changed');
         this._refreshMinion();
         this._render();
       });
@@ -167,7 +170,7 @@ class WardrobeClass {
       const items = getClothingBySlot(slot).filter(i => GameState.unlockedClothing.has(i.id));
       if (items.length > 0) {
         const pick = items[Math.floor(Math.random() * items.length)];
-        m.outfit[slot] = pick.id;
+        GameState.setMinionOutfit(m.id, slot, pick.id);
       }
     }
     this._refreshMinion();

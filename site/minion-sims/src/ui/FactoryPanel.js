@@ -15,11 +15,15 @@ class FactoryPanelClass {
 
     GameState.on('open-factory', () => this.show());
     GameState.on('close-factory', () => this.hide());
+    GameState.on('coins-changed', () => { if (this.el.style.display !== 'none') this._render(); });
+    GameState.on('minion-moved', () => { if (this.el.style.display !== 'none') this._render(); });
+    GameState.on('refresh-minions', () => { if (this.el.style.display !== 'none') this._render(); });
   }
 
   show() {
     this.el.style.display = 'flex';
     this._render();
+    // Refresh timer display periodically while open
     this._interval = setInterval(() => this._render(), 5000);
 
     // Close on backdrop click
@@ -91,7 +95,7 @@ class FactoryPanelClass {
             const flags = GameState.storyProgress.flags;
             flags.maxFactoryTime = Math.max(flags.maxFactoryTime || 0, elapsed);
           }
-          m.area = 'yard';
+          GameState.setMinionArea(m.id, 'yard');
           delete GameState.factoryLog[m.id];
           GameState.emit('refresh-minions');
         }

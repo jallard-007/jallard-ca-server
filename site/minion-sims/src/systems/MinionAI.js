@@ -1,5 +1,5 @@
 import { GameState } from './GameState.js';
-import { clamp, randFloat, randInt, getMoodFromValue } from '../utils.js';
+import { clamp, randFloat } from '../utils.js';
 
 const HUNGER_DECAY_INTERVAL = 30000;
 const ENERGY_DECAY_INTERVAL = 15000;
@@ -15,6 +15,7 @@ class MinionAIClass {
     this._lastEnergy = 0;
     this._lastAutoInteract = 0;
     this._lastMoodDecay = 0;
+    this._lastAge = 0;
     this._wanderTimers = {};
 
     // Clean up wander timers when minions are deleted
@@ -31,8 +32,8 @@ class MinionAIClass {
       this._lastHunger = time;
       for (const m of GameState.minions) {
         if (m.area !== 'factory' && !m.isSleeping) {
-          m.hunger = clamp(m.hunger - 1, 0, 100);
-          if (m.hunger === 0) m.moodValue = clamp(m.moodValue - 5, 0, 100);
+          GameState.setMinionHunger(m.id, m.hunger - 1);
+          if (m.hunger === 0) GameState.setMinionMood(m.id, m.moodValue - 5);
         }
       }
     }
@@ -44,7 +45,17 @@ class MinionAIClass {
         if (m.isSleeping) continue;
         // Factory drains faster
         const drain = m.area === 'factory' ? 3 : 1;
-        m.energy = clamp(m.energy - drain, 0, 100);
+        GameState.setMinionEnergy(m.id, m.energy - drain);
+        // Auto-sleep at 0 energy (checked here instead of per-frame)
+        if (m.energy <= 0 && m.area !== 'factory') {
+          GameState.setMinionSleeping(m.id, true);
+          GameState.setMinionMood(m.id, clamp(m.moodValue, 40, 60));
+          const wakeTime = 15000 / speed;
+          setTimeout(() => {
+            GameState.setMinionSleeping(m.id, false);
+            GameState.setMinionEnergy(m.id, 50);
+          }, wakeTime);
+        }
       }
     }
 
@@ -53,22 +64,9 @@ class MinionAIClass {
       this._lastMoodDecay = time;
       for (const m of GameState.minions) {
         if (m.hunger > 0 && !m.isSleeping) {
-          if (m.moodValue > 50) m.moodValue = clamp(m.moodValue - 3, 50, 100);
-          else if (m.moodValue < 50) m.moodValue = clamp(m.moodValue + 3, 0, 50);
+          if (m.moodValue > 50) GameState.setMinionMood(m.id, m.moodValue - 3);
+          else if (m.moodValue < 50) GameState.setMinionMood(m.id, m.moodValue + 3);
         }
-      }
-    }
-
-    // Auto-sleep at 0 energy
-    for (const m of GameState.minions) {
-      if (m.energy <= 0 && !m.isSleeping && m.area !== 'factory') {
-        m.isSleeping = true;
-        m.moodValue = clamp(m.moodValue, 40, 60);
-        const wakeTime = 15000 / speed;
-        setTimeout(() => {
-          m.isSleeping = false;
-          m.energy = 50;
-        }, wakeTime);
       }
     }
 
@@ -91,9 +89,13 @@ class MinionAIClass {
       this._checkAutoInteract(minionSprites, scene);
     }
 
-    // Age
-    for (const m of GameState.minions) {
-      m.age += (delta * speed) / 1000;
+    // Age (throttled — 1s intervals, no need for per-frame precision)
+    if (time - this._lastAge >= 1000) {
+      const ageDelta = (time - this._lastAge) * speed / 1000;
+      this._lastAge = time;
+      for (const m of GameState.minions) {
+        m.age += ageDelta;
+      }
     }
   }
 
@@ -173,8 +175,8 @@ class MinionAIClass {
         if (dx * dx + dy * dy < 10000 && Math.random() < AUTO_INTERACT_CHANCE) {
           const friendship = a.friendship[b.id] || 0;
           if (friendship >= 20) {
-            a.friendship[b.id] = clamp((a.friendship[b.id] || 0) + 3, 0, 100);
-            b.friendship[a.id] = clamp((b.friendship[a.id] || 0) + 3, 0, 100);
+            GameState.setFriendship(a.id, b.id, (a.friendship[b.id] || 0) + 3);
+            GameState.setFriendship(b.id, a.id, (b.friendship[a.id] || 0) + 3);
             if (scene) {
               const mx = (sprA.x + sprB.x) / 2;
               const my = Math.min(sprA.y, sprB.y) - 30;
@@ -198,6 +200,7 @@ class MinionAIClass {
     this._lastEnergy = 0;
     this._lastAutoInteract = 0;
     this._lastMoodDecay = 0;
+    this._lastAge = 0;
   }
 }
 

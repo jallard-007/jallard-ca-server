@@ -128,11 +128,12 @@ class NurseryClass {
     const p2 = this._parent2;
 
     // Apply energy cost and cooldown only now that the player confirmed
-    p1.energy = Math.max(0, p1.energy - 30);
-    p2.energy = Math.max(0, p2.energy - 30);
+    GameState.setMinionEnergy(p1.id, p1.energy - 30);
+    GameState.setMinionEnergy(p2.id, p2.energy - 30);
     p1.cooldowns['procreate'] = Date.now() + 30000;
     p2.cooldowns['procreate'] = Date.now() + 30000;
     GameState.storyProgress.flags.procreationDone = true;
+    GameState.emit('state-changed');
 
     const newMinion = GameState.createMinion({
       name, eyeType, bodyShape, weight,
@@ -144,10 +145,10 @@ class NurseryClass {
     });
 
     // Set friendships with parents
-    newMinion.friendship[p1.id] = 20;
-    newMinion.friendship[p2.id] = 20;
-    p1.friendship[newMinion.id] = 20;
-    p2.friendship[newMinion.id] = 20;
+    GameState.setFriendship(newMinion.id, p1.id, 20);
+    GameState.setFriendship(newMinion.id, p2.id, 20);
+    GameState.setFriendship(p1.id, newMinion.id, 20);
+    GameState.setFriendship(p2.id, newMinion.id, 20);
 
     AudioManager.play('celebration');
     GameState.emit('refresh-minions');

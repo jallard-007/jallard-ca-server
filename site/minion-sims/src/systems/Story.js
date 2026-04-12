@@ -178,7 +178,7 @@ const chapters = [
           const candidates = GameState.minions.filter(m => m.isDeletable && m.area !== 'factory');
           if (candidates.length > 0 && !GameState.capturedMinionId) {
             const victim = pickRandom(candidates);
-            victim.area = 'captured';
+            GameState.setMinionArea(victim.id, 'captured');
             GameState.capturedMinionId = victim.id;
             GameState.emit('minion-captured', victim);
           }
@@ -235,8 +235,8 @@ const chapters = [
           if (GameState.capturedMinionId) {
             const minion = GameState.getMinion(GameState.capturedMinionId);
             if (minion) {
-              minion.area = 'yard';
-              minion.moodValue = 90;
+              GameState.setMinionArea(minion.id, 'yard');
+              GameState.setMinionMood(minion.id, 90);
               if (!minion.traits.includes('Survivor')) minion.traits.push('Survivor');
             }
             GameState.capturedMinionId = null;
@@ -328,7 +328,18 @@ const chapters = [
 
 class StorySystem {
   constructor() {
-    this._lastCheck = 0;
+    this._checkScheduled = false;
+
+    // Event-driven mission checking — listen to state changes that missions care about
+    const trigger = () => this._scheduleCheck();
+    GameState.on('minion-added', trigger);
+    GameState.on('minion-deleted', trigger);
+    GameState.on('area-changed', trigger);
+    GameState.on('refresh-minions', trigger);
+    GameState.on('coins-changed', trigger);
+    GameState.on('selection-changed', trigger);
+    // Generic event for actions/flags (emit 'state-changed' from action code)
+    GameState.on('state-changed', trigger);
   }
 
   getChapters() { return chapters; }
@@ -350,16 +361,25 @@ class StorySystem {
     return GameState.storyProgress.completedMissions.includes(id);
   }
 
-  checkMissions(time) {
-    if (time - this._lastCheck < 2000) return;
-    this._lastCheck = time;
+  /** Debounced check — coalesces rapid events into one check */
+  _scheduleCheck() {
+    if (this._checkScheduled) return;
+    this._checkScheduled = true;
+    setTimeout(() => {
+      this._checkScheduled = false;
+      this._doCheck();
+    }, 500);
+  }
 
+  /** Called from scene update for backward compat — now a no-op */
+  checkMissions() {}
+
+  _doCheck() {
     const ch = this.getCurrentChapter();
     if (!ch) return;
 
     for (const mission of ch.missions) {
       if (GameState.storyProgress.completedMissions.includes(mission.id)) continue;
-      // This is the next active mission
       if (mission.check()) {
         this._completeMission(mission);
       }
@@ -391,6 +411,7 @@ class StorySystem {
     if (!GameState.storyProgress.completedMissions.includes('4.4')) return false;
     if (Economy.spendCoins(75)) {
       GameState.storyProgress.flags.rescueFunded = true;
+      GameState.emit('state-changed');
       return true;
     }
     return false;

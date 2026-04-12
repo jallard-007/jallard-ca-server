@@ -1,4 +1,4 @@
-import { uuid, moodValueFor } from '../utils.js';
+import { uuid, moodValueFor, clamp, getMoodFromValue } from '../utils.js';
 
 class GameStateManager {
   constructor() {
@@ -153,6 +153,75 @@ class GameStateManager {
     stuart.friendship[bob.id] = 30;
     bob.friendship[kevin.id] = 30;
     bob.friendship[stuart.id] = 30;
+  }
+
+  /* ── Setters that emit events for UI updates ── */
+
+  setMinionMood(id, value) {
+    const m = this.getMinion(id);
+    if (!m) return;
+    const clamped = clamp(value, 0, 100);
+    const oldMood = getMoodFromValue(m.moodValue);
+    m.moodValue = clamped;
+    const newMood = getMoodFromValue(clamped);
+    if (newMood !== oldMood) this.emit('minion-mood-changed', { id, mood: newMood });
+  }
+
+  setMinionSleeping(id, value) {
+    const m = this.getMinion(id);
+    if (!m) return;
+    if (m.isSleeping === value) return;
+    m.isSleeping = value;
+    this.emit('minion-sleep-changed', { id, isSleeping: value });
+  }
+
+  setMinionHunger(id, value) {
+    const m = this.getMinion(id);
+    if (!m) return;
+    m.hunger = clamp(value, 0, 100);
+    this.emit('minion-hunger-changed', { id, hunger: m.hunger });
+  }
+
+  setMinionEnergy(id, value) {
+    const m = this.getMinion(id);
+    if (!m) return;
+    m.energy = clamp(value, 0, 100);
+    this.emit('minion-energy-changed', { id, energy: m.energy });
+  }
+
+  setMinionArea(id, area) {
+    const m = this.getMinion(id);
+    if (!m || m.area === area) return;
+    m.area = area;
+    this.emit('minion-moved', m);
+  }
+
+  setFriendship(id1, id2, value) {
+    const m1 = this.getMinion(id1);
+    const m2 = this.getMinion(id2);
+    if (!m1 || !m2) return;
+    m1.friendship[id2] = clamp(value, 0, 100);
+    this.emit('friendship-changed', { id: id1, targetId: id2, value: m1.friendship[id2] });
+  }
+
+  setMinionOutfit(id, slot, itemId) {
+    const m = this.getMinion(id);
+    if (!m) return;
+    m.outfit[slot] = itemId;
+    this.emit('outfit-changed', { id, slot, itemId });
+  }
+
+  setMinionPinned(id, value) {
+    const m = this.getMinion(id);
+    if (!m) return;
+    m.pinned = value;
+    this.emit('minion-pinned', { id, pinned: value });
+  }
+
+  setSetting(key, value) {
+    if (this.settings[key] === value) return;
+    this.settings[key] = value;
+    this.emit('setting-changed', { key, value });
   }
 
   toJSON() {
