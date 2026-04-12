@@ -16,6 +16,11 @@ class MinionAIClass {
     this._lastAutoInteract = 0;
     this._lastMoodDecay = 0;
     this._wanderTimers = {};
+
+    // Clean up wander timers when minions are deleted
+    GameState.on('minion-deleted', ({ id }) => {
+      delete this._wanderTimers[id];
+    });
   }
 
   update(time, delta, minionSprites, scene) {
@@ -163,8 +168,9 @@ class MinionAIClass {
         const a = minionsHere[i], b = minionsHere[j];
         const sprA = minionSprites.get(a.id), sprB = minionSprites.get(b.id);
         if (!sprA || !sprB) continue;
-        const dist = Math.hypot(sprA.x - sprB.x, sprA.y - sprB.y);
-        if (dist < 100 && Math.random() < AUTO_INTERACT_CHANCE) {
+        const dx = sprA.x - sprB.x, dy = sprA.y - sprB.y;
+        // Use squared distance to avoid Math.hypot per pair
+        if (dx * dx + dy * dy < 10000 && Math.random() < AUTO_INTERACT_CHANCE) {
           const friendship = a.friendship[b.id] || 0;
           if (friendship >= 20) {
             a.friendship[b.id] = clamp((a.friendship[b.id] || 0) + 3, 0, 100);
@@ -178,6 +184,8 @@ class MinionAIClass {
                 onComplete: () => t.destroy(),
               });
             }
+            // Early exit — one interaction per check cycle is enough
+            return;
           }
         }
       }

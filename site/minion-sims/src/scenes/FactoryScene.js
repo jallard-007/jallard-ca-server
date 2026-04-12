@@ -67,11 +67,13 @@ export class FactoryScene extends Phaser.Scene {
 
     // Animated bananas on conveyor belt
     this._conveyorBananas = [];
+    this._bgTweenTargets = [];
     const beltY = h * 0.33 + 4;
     for (let i = 0; i < 6; i++) {
       const banana = this.add.text(i * (w / 5), beltY, '🍌', { fontSize: '18px' })
         .setOrigin(0.5).setDepth(3);
       this._conveyorBananas.push(banana);
+      this._bgTweenTargets.push(banana);
       this.tweens.add({
         targets: banana,
         x: w + 30,
@@ -121,6 +123,7 @@ export class FactoryScene extends Phaser.Scene {
     for (let i = 0; i < 3; i++) {
       const sx = randFloat(50, w - 50);
       const steam = this.add.text(sx, h * 0.3, '💨', { fontSize: '18px' }).setAlpha(0.3).setDepth(0);
+      this._bgTweenTargets.push(steam);
       this.tweens.add({
         targets: steam, y: h * 0.1, alpha: 0,
         duration: 4000 + Math.random() * 2000,
@@ -195,21 +198,31 @@ export class FactoryScene extends Phaser.Scene {
 
     for (const [, sprite] of this.minionSprites) {
       sprite.update();
-      // Occasional sweat/effort particles
-      if (Math.random() < 0.003) {
-        const sweat = this.add.text(sprite.x + 10, sprite.y - 25, '💦', { fontSize: '12px' })
-          .setOrigin(0.5).setDepth(999);
-        this.tweens.add({
-          targets: sweat, y: sprite.y - 50, alpha: 0,
-          duration: 800,
-          onComplete: () => sweat.destroy(),
-        });
+      // Throttled sweat/effort particles — check every ~500ms per minion instead of every frame
+      if (!sprite.getData('nextSweat') || time >= sprite.getData('nextSweat')) {
+        sprite.setData('nextSweat', time + 500);
+        if (Math.random() < 0.09) {
+          const sweat = this.add.text(sprite.x + 10, sprite.y - 25, '💦', { fontSize: '12px' })
+            .setOrigin(0.5).setDepth(999);
+          this.tweens.add({
+            targets: sweat, y: sprite.y - 50, alpha: 0,
+            duration: 800,
+            onComplete: () => sweat.destroy(),
+          });
+        }
       }
     }
   }
 
   shutdown() {
     if (this._unsubs) this._unsubs.forEach(fn => fn());
+    // Kill all infinite tweens to prevent accumulation across scene transitions
+    if (this._bgTweenTargets) {
+      for (const target of this._bgTweenTargets) this.tweens.killTweensOf(target);
+    }
+    for (const [, sprite] of this.minionSprites) {
+      this.tweens.killTweensOf(sprite);
+    }
     this.minionSprites.clear();
   }
 }

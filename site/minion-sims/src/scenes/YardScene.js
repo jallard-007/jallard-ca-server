@@ -45,9 +45,11 @@ export class YardScene extends Phaser.Scene {
     this.add.text(w - 70, 25, '☀️', { fontSize: '40px' }).setDepth(0);
 
     // Clouds
+    this._cloudSprites = [];
     const clouds = ['☁️'];
     [[w * 0.08, 30, '38px'], [w * 0.35, 50, '28px'], [w * 0.62, 18, '44px'], [w * 0.82, 55, '22px']].forEach(([x, y, size]) => {
       const c = this.add.text(x, y, '☁️', { fontSize: size }).setDepth(0);
+      this._cloudSprites.push(c);
       this.tweens.add({ targets: c, x: x + 30, yoyo: true, repeat: -1, duration: 8000 + Math.random() * 4000, ease: 'Sine.easeInOut' });
     });
 
@@ -125,6 +127,13 @@ export class YardScene extends Phaser.Scene {
 
   shutdown() {
     if (this._unsubs) this._unsubs.forEach(fn => fn());
+    // Kill infinite cloud tweens to prevent accumulation
+    if (this._cloudSprites) {
+      for (const c of this._cloudSprites) this.tweens.killTweensOf(c);
+    }
+    for (const [, sprite] of this.minionSprites) {
+      this.tweens.killTweensOf(sprite);
+    }
     this.minionSprites.clear();
   }
 }

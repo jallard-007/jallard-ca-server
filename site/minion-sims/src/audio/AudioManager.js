@@ -22,8 +22,14 @@ class AudioManagerClass {
 
   playFile(url) {
     if (!this.enabled) return;
-    // Use an HTML Audio element — no Web Audio decoding needed, works immediately
-    const audio = new Audio(url);
+    // Reuse pooled Audio elements to avoid constant allocation
+    if (!this._audioPool) this._audioPool = {};
+    let audio = this._audioPool[url];
+    if (!audio || !audio.paused) {
+      audio = new Audio(url);
+      this._audioPool[url] = audio;
+    }
+    audio.currentTime = 0;
     audio.volume = GameState.settings.sfxVolume / 100;
     audio.play().catch(() => {});
   }

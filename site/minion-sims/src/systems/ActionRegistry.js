@@ -5,23 +5,47 @@ import { AudioManager } from '../audio/AudioManager.js';
 
 /* ── helpers ── */
 
+// Pooled text objects to reduce GC pressure from floatText/particleBurst
+const _textPool = [];
+const MAX_POOL = 60;
+
+function _acquireText(scene, x, y, text, style) {
+  let t = _textPool.pop();
+  if (t && t.scene === scene) {
+    t.setPosition(x, y).setText(text).setStyle(style).setAlpha(1).setVisible(true).setDepth(1000).setOrigin(0.5);
+  } else {
+    if (t) t.destroy(); // wrong scene, discard
+    t = scene.add.text(x, y, text, style).setOrigin(0.5).setDepth(1000);
+  }
+  return t;
+}
+
+function _releaseText(t) {
+  if (!t || !t.scene) return;
+  t.setVisible(false);
+  if (_textPool.length < MAX_POOL) {
+    _textPool.push(t);
+  } else {
+    t.destroy();
+  }
+}
+
 function floatText(scene, x, y, text, color = '#ffffff') {
   if (!scene) return;
-  const t = scene.add.text(x, y, text, {
+  const t = _acquireText(scene, x, y, text, {
     fontSize: '20px', color, fontFamily: 'Arial',
     stroke: '#000', strokeThickness: 2,
-  }).setOrigin(0.5).setDepth(1000);
+  });
   scene.tweens.add({
     targets: t, y: y - 40, alpha: 0, duration: 1200,
-    onComplete: () => t.destroy(),
+    onComplete: () => _releaseText(t),
   });
 }
 
 function particleBurst(scene, x, y, emoji, count = 5) {
   if (!scene) return;
   for (let i = 0; i < count; i++) {
-    const t = scene.add.text(x, y, emoji, { fontSize: '16px' })
-      .setOrigin(0.5).setDepth(1000);
+    const t = _acquireText(scene, x, y, emoji, { fontSize: '16px' });
     const angle = (Math.PI * 2 * i) / count;
     const dist = 30 + Math.random() * 30;
     scene.tweens.add({
@@ -30,7 +54,7 @@ function particleBurst(scene, x, y, emoji, count = 5) {
       y: y + Math.sin(angle) * dist - 20,
       alpha: 0,
       duration: 800 + Math.random() * 400,
-      onComplete: () => t.destroy(),
+      onComplete: () => _releaseText(t),
     });
   }
 }

@@ -194,10 +194,25 @@ export class Minion extends Phaser.GameObjects.Container {
           const bibH = dims.h / 2 - bibY;
           g.fillStyle(c, 0.85);
           g.fillRect(-dims.w / 3, bibY, dims.w / 1.5, bibH);
-          // Straps from bib to shoulders
+          // Straps over shoulders (angled outward)
           g.fillStyle(c, 1);
-          g.fillRect(-dims.w / 4, -dims.h / 3.5, 4, dims.h / 3.5 + bibY + 2);
-          g.fillRect(dims.w / 4 - 4, -dims.h / 3.5, 4, dims.h / 3.5 + bibY + 2);
+          const strapTop = -dims.h / 10;
+          // Left strap
+          g.beginPath();
+          g.moveTo(-dims.w / 3 + 2, bibY);
+          g.lineTo(-dims.w / 3 + 6, bibY);
+          g.lineTo(-dims.w / 2 + 1, strapTop);
+          g.lineTo(-dims.w / 2 - 2, strapTop);
+          g.closePath();
+          g.fillPath();
+          // Right strap
+          g.beginPath();
+          g.moveTo(dims.w / 3 - 6, bibY);
+          g.lineTo(dims.w / 3 - 2, bibY);
+          g.lineTo(dims.w / 2 + 2, strapTop);
+          g.lineTo(dims.w / 2 - 1, strapTop);
+          g.closePath();
+          g.fillPath();
           // Buttons where straps meet bib
           g.fillStyle(0xFFFFFF, 0.9);
           g.fillCircle(-dims.w / 4 + 2, bibY + 2, 2.5);
@@ -729,14 +744,20 @@ export class Minion extends Phaser.GameObjects.Container {
     this.nameLabel.setVisible(GameState.settings.showNameLabels);
     this.sleepText.setVisible(d.isSleeping);
 
-    // Selection highlight
-    this.ring.clear();
-    if (GameState.selectedMinionId === this.minionId) {
-      this.ring.lineStyle(3, 0x00ff00, 0.8);
-      this.ring.strokeCircle(0, 0, 42);
-    } else if (GameState.secondMinionId === this.minionId) {
-      this.ring.lineStyle(3, 0x00aaff, 0.8);
-      this.ring.strokeCircle(0, 0, 42);
+    // Selection highlight — only redraw when selection state changes
+    const isSelected = GameState.selectedMinionId === this.minionId;
+    const isSecondary = GameState.secondMinionId === this.minionId;
+    const selState = isSelected ? 1 : isSecondary ? 2 : 0;
+    if (selState !== this._lastSelState) {
+      this._lastSelState = selState;
+      this.ring.clear();
+      if (isSelected) {
+        this.ring.lineStyle(3, 0x00ff00, 0.8);
+        this.ring.strokeCircle(0, 0, 42);
+      } else if (isSecondary) {
+        this.ring.lineStyle(3, 0x00aaff, 0.8);
+        this.ring.strokeCircle(0, 0, 42);
+      }
     }
 
     // Depth by Y

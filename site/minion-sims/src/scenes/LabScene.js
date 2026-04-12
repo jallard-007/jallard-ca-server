@@ -117,6 +117,9 @@ export class LabScene extends Phaser.Scene {
 
   shutdown() {
     if (this._unsubs) this._unsubs.forEach(fn => fn());
+    for (const [, sprite] of this.minionSprites) {
+      this.tweens.killTweensOf(sprite);
+    }
     this.minionSprites.clear();
   }
 }
