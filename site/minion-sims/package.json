@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build --mode development",
-    "build:prod": "vite build --mode production --outDir ../../prod/minion-sims",
+    "build:prod": "vite build --mode production --outDir ../../prod/minion-sims --emptyOutDir",
     "preview": "vite preview"
   },
   "dependencies": {

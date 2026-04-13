@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/jallard-007/jallard-ca-server/api"
+	"github.com/jallard-007/jallard-ca-server/pb"
 )
 
 type contextKey int
@@ -158,10 +159,13 @@ func realMain() int {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
 	defer stop()
 
-	root := os.Getenv("JALLARD_ROOT")
-	if root == "" {
-		root = "./dist"
+	jallardRoot := os.Getenv("JALLARD_ROOT")
+	if jallardRoot == "" {
+		jallardRoot = "."
 	}
+
+	distDir := filepath.Join(jallardRoot, "dist")
+	pbDataDir := filepath.Join(jallardRoot, "pb_data")
 
 	port := os.Getenv("JALLARD_PORT")
 	if port == "" {
@@ -169,18 +173,30 @@ func realMain() int {
 	}
 
 	mux := http.NewServeMux()
-	h := precompressedHandler(root)
+	h := precompressedHandler(distDir)
 
 	mux.HandleFunc("GET /", func(w http.ResponseWriter, r *http.Request) {
 		h.ServeHTTP(w, r)
 	})
+
+	// ── PocketBase: period-tracker ────────────────────────────────
+	ptSite, err := pb.NewSite("period-tracker", pbDataDir)
+	if err != nil {
+		slog.Error("pocketbase init failed", "site", "period-tracker", "err", err)
+		return 1
+	}
+	if err := pb.ConfigurePeriodTracker(ptSite); err != nil {
+		slog.Error("pocketbase configure failed", "site", "period-tracker", "err", err)
+		return 1
+	}
+	pb.MountOnMux(mux, "period-tracker", ptSite)
 
 	server := &http.Server{
 		Addr:    ":" + port,
 		Handler: loggingMiddleware(api.NewServer(mux)),
 	}
 
-	slog.Info("starting", "port", port, "root", root)
+	slog.Info("starting", "port", port, "distDir", distDir, "pbDataDir", pbDataDir)
 
 	done := make(chan struct{})
 	var serverErr error
