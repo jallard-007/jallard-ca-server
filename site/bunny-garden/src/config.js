@@ -88,6 +88,7 @@ export const gameConfig = {
     backgroundColor: '#87CEEB',
     disableContextMenu: true,
     autoFocus: true,
+    pauseOnBlur: false,
     input: {
         windowEvents: false,
     },

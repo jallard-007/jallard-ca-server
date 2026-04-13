@@ -18,4 +18,5 @@ export const gameConfig = {
     limit: 30,
   },
   backgroundColor: '#87CEEB',
+  pauseOnBlur: false,
 };
