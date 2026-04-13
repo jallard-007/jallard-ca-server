@@ -457,7 +457,7 @@ On load:
 - **Phaser 4** (`^4.0.0`): Game framework — all rendering, input, tweens, particles.
 - **Vite** (`^6.3.1`): Dev server and build tool.
 - **Google Fonts**: Fredoka (display), Nunito (body) — loaded via `<link>` preconnect.
-- **Server API**: `GET /api/fact` — returns `{ fact: string }`. Optional; fails silently.
+- **Server API**: `GET /api/bunny-fact` — returns `{ fact: string }`. Optional; fails silently.
 
 ---
 
