@@ -6,6 +6,10 @@
   ],
   "scripts": {
     "build": "npm run build --workspaces",
+    "build:prod": "npm run build:prod --workspaces",
     "install:all": "npm install --workspaces"
+  },
+  "devDependencies": {
+    "vite-plugin-compression2": "^2.5.3"
   }
 }
