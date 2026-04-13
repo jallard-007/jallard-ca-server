@@ -1,22 +1,47 @@
 import { useState } from 'react';
-import { saveUser } from '../state.js';
+import { login, register } from '../state.js';
 import { navigate } from '../App.jsx';
 
 export default function Login() {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const [isRegister, setIsRegister] = useState(false);
     const [error, setError] = useState('');
+    const [loading, setLoading] = useState(false);
 
-    function handleSubmit(e) {
+    async function handleSubmit(e) {
         e.preventDefault();
         if (!email || !password) {
             setError('Please enter your email and password.');
             return;
         }
+        if (password.length < 8) {
+            setError('Password must be at least 8 characters.');
+            return;
+        }
         setError('');
-        // Temporary stub — authentication will be handled by PocketBase once integrated.
-        saveUser({ email, loggedIn: true });
-        navigate('setup');
+        setLoading(true);
+        try {
+            if (isRegister) {
+                await register(email, password);
+                navigate('setup');
+            } else {
+                const user = await login(email, password);
+                // If profile is already complete, go home; otherwise setup
+                if (user.name && user.birthday) {
+                    navigate('home');
+                } else {
+                    navigate('setup');
+                }
+            }
+        } catch (err) {
+            const msg = err?.response?.data?.message
+                || err?.message
+                || 'Something went wrong. Please try again.';
+            setError(msg);
+        } finally {
+            setLoading(false);
+        }
     }
 
     return (
@@ -46,7 +71,7 @@ export default function Login() {
                             value={password}
                             onChange={e => setPassword(e.target.value)}
                             placeholder="••••••••"
-                            autoComplete="current-password"
+                            autoComplete={isRegister ? 'new-password' : 'current-password'}
                             required
                             className="input"
                         />
@@ -54,11 +79,20 @@ export default function Login() {
 
                     {error && <ErrorMsg>{error}</ErrorMsg>}
 
-                    <button type="submit" className="btn-primary">Sign in</button>
+                    <button type="submit" disabled={loading} className="btn-primary disabled:opacity-60">
+                        {loading ? 'Please wait…' : (isRegister ? 'Create account' : 'Sign in')}
+                    </button>
                 </form>
 
                 <p className="text-center text-xs text-gray-400 mt-5">
-                    New here? Just sign in and we'll get you set up.
+                    {isRegister ? 'Already have an account?' : "Don't have an account?"}{' '}
+                    <button
+                        type="button"
+                        onClick={() => { setIsRegister(!isRegister); setError(''); }}
+                        className="text-pink-500 hover:text-pink-600 font-semibold"
+                    >
+                        {isRegister ? 'Sign in' : 'Create one'}
+                    </button>
                 </p>
             </div>
         </div>

@@ -11,6 +11,9 @@ import (
 
 	"github.com/pocketbase/pocketbase/apis"
 	"github.com/pocketbase/pocketbase/core"
+
+	// Register PocketBase system migrations (creates _collections, _superusers, etc.)
+	_ "github.com/pocketbase/pocketbase/migrations"
 )
 
 // Site represents a single PocketBase instance for one site.

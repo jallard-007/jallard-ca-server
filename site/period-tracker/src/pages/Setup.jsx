@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { saveUser, getUser, getCycleDay } from '../state.js';
+import { saveUser, getUser, getCycleDay, updateProfile } from '../state.js';
 import { navigate } from '../App.jsx';
 
 export default function Setup() {
@@ -7,8 +7,9 @@ export default function Setup() {
     const [name, setName] = useState(existing?.name || '');
     const [birthday, setBirthday] = useState(existing?.birthday || '');
     const [error, setError] = useState('');
+    const [loading, setLoading] = useState(false);
 
-    function handleSubmit(e) {
+    async function handleSubmit(e) {
         e.preventDefault();
         if (!name.trim()) { setError('Please enter your name.'); return; }
         if (!birthday)    { setError('Please enter your birthday.'); return; }
@@ -17,8 +18,21 @@ export default function Setup() {
             return;
         }
         setError('');
-        saveUser({ name: name.trim(), birthday });
-        navigate('home');
+        setLoading(true);
+        try {
+            await updateProfile({ name: name.trim(), birthday });
+            navigate('home');
+        } catch (err) {
+            // Save locally even if server sync fails
+            saveUser({ name: name.trim(), birthday });
+            const msg = err?.response?.data?.message || err?.message || '';
+            if (msg) {
+                setError('Saved locally. Server sync failed: ' + msg);
+            }
+            navigate('home');
+        } finally {
+            setLoading(false);
+        }
     }
 
     return (
@@ -61,7 +75,9 @@ export default function Setup() {
                         </div>
                     )}
 
-                    <button type="submit" className="btn-primary">Let's go 🌸</button>
+                    <button type="submit" disabled={loading} className="btn-primary disabled:opacity-60">
+                        {loading ? 'Saving…' : "Let's go 🌸"}
+                    </button>
                 </form>
             </div>
         </div>

@@ -1,15 +1,17 @@
 import { useState, useEffect, useRef } from 'react';
-import { getUser, saveUser, clearUser, getCycleDay, getPhaseForDay, PHASES } from '../state.js';
+import { getUser, saveUser, clearUser, getCycleDay, getPhaseForDay, PHASES, updateProfile, changePassword } from '../state.js';
 import { navigate } from '../App.jsx';
 
 export default function Profile() {
     const user = getUser();
     const [name, setName] = useState(user?.name || '');
     const [birthday, setBirthday] = useState(user?.birthday || '');
+    const [oldPassword, setOldPassword] = useState('');
     const [password, setPassword] = useState('');
     const [confirm, setConfirm] = useState('');
     const [error, setError] = useState('');
     const [success, setSuccess] = useState(false);
+    const [loading, setLoading] = useState(false);
 
     const successTimerRef = useRef(null);
 
@@ -21,7 +23,7 @@ export default function Profile() {
 
     const initial = (user?.name || '?')[0].toUpperCase();
 
-    function handleSubmit(e) {
+    async function handleSubmit(e) {
         e.preventDefault();
         setError('');
         setSuccess(false);
@@ -32,14 +34,32 @@ export default function Profile() {
             setError('Birthday must be a valid date that is not in the future.');
             return;
         }
+        if (password && password.length < 8) { setError('New password must be at least 8 characters.'); return; }
         if (password && password !== confirm) { setError('Passwords do not match.'); return; }
+        if (password && !oldPassword) { setError('Please enter your current password to change it.'); return; }
 
-        const updates = { name: name.trim(), birthday };
-        if (password) updates.passwordHint = '(set)'; // Temporary — will be replaced by PocketBase auth
-        saveUser(updates);
-        setSuccess(true);
-        if (successTimerRef.current) clearTimeout(successTimerRef.current);
-        successTimerRef.current = setTimeout(() => setSuccess(false), 3000);
+        setLoading(true);
+        try {
+            await updateProfile({ name: name.trim(), birthday });
+
+            if (password) {
+                await changePassword(oldPassword, password);
+                setOldPassword('');
+                setPassword('');
+                setConfirm('');
+            }
+
+            setSuccess(true);
+            if (successTimerRef.current) clearTimeout(successTimerRef.current);
+            successTimerRef.current = setTimeout(() => setSuccess(false), 3000);
+        } catch (err) {
+            const msg = err?.response?.data?.message || err?.message || 'Save failed.';
+            setError(msg);
+            // Still save locally as fallback
+            saveUser({ name: name.trim(), birthday });
+        } finally {
+            setLoading(false);
+        }
     }
 
     // Derive phase color from cycle state (works even if Home hasn't mounted)
@@ -105,6 +125,17 @@ export default function Profile() {
                     <h2 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">Security</h2>
 
                     <div className="bg-white rounded-2xl shadow-sm overflow-hidden mb-4">
+                        <ProfileField label="Current password" htmlFor="p-old-password" border>
+                            <input
+                                id="p-old-password"
+                                type="password"
+                                value={oldPassword}
+                                onChange={e => setOldPassword(e.target.value)}
+                                placeholder="Required to change password"
+                                autoComplete="current-password"
+                                className="input-inline"
+                            />
+                        </ProfileField>
                         <ProfileField label="New password" htmlFor="p-password" border>
                             <input
                                 id="p-password"
@@ -140,7 +171,9 @@ export default function Profile() {
                         </div>
                     )}
 
-                    <button type="submit" className="btn-primary">Save changes</button>
+                    <button type="submit" disabled={loading} className="btn-primary disabled:opacity-60">
+                        {loading ? 'Saving…' : 'Save changes'}
+                    </button>
                 </form>
 
                 <div className="px-4 mt-4">

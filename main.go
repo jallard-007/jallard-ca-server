@@ -175,7 +175,11 @@ func realMain() int {
 	mux := http.NewServeMux()
 	h := precompressedHandler(distDir)
 
-	mux.HandleFunc("GET /", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet && r.Method != http.MethodHead {
+			http.NotFound(w, r)
+			return
+		}
 		h.ServeHTTP(w, r)
 	})
 
