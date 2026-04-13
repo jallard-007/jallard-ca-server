@@ -132,7 +132,7 @@ document.getElementById('modal-save').addEventListener('click', () => {
 
 async function fetchFact() {
     try {
-        const res = await fetch('/api/bunny-fact');
+        const res = await fetch('/bunny-garden/api/bunny-fact');
         if (!res.ok) return null;
         const data = await res.json();
         return data.fact;

@@ -1,4 +1,4 @@
-package api
+package server
 
 import (
 	"encoding/json"
@@ -6,11 +6,7 @@ import (
 	"net/http"
 )
 
-type Server struct {
-	mux *http.ServeMux
-}
-
-type FactResponse struct {
+type BunnyFactResponse struct {
 	Fact string `json:"fact"`
 }
 
@@ -32,19 +28,21 @@ var bunnyFacts = []string{
 	"Bunnies do zoomies when they're extra happy!",
 }
 
-func NewServer(mux *http.ServeMux) *Server {
-	mux.HandleFunc("GET /api/minion-sims/ping", func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusNoContent)
-	})
+type BunnyGardenApiServer struct {
+	handler http.Handler
+}
+
+func NewBunnyGardenApiServer() *BunnyGardenApiServer {
+	mux := http.NewServeMux()
 
 	mux.HandleFunc("GET /api/bunny-fact", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		fact := bunnyFacts[rand.Intn(len(bunnyFacts))]
-		json.NewEncoder(w).Encode(FactResponse{Fact: fact})
+		json.NewEncoder(w).Encode(BunnyFactResponse{Fact: fact})
 	})
-	return &Server{mux: mux}
-}
 
-func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	s.mux.ServeHTTP(w, r)
+	s := &BunnyGardenApiServer{
+		handler: mux,
+	}
+	return s
 }
