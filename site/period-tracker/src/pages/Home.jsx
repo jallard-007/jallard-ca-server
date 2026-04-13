@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { getUser, getCycleDay, getPhaseForDay, PHASES, CYCLE_LENGTH } from '../state.js';
 import { navigate } from '../App.jsx';
 
@@ -172,15 +172,13 @@ export default function Home() {
 
     const [expandedPhaseIdx, setExpandedPhaseIdx] = useState(null);
 
-    if (!user) {
-        navigate('login');
-        return null;
-    }
+    // Redirect in effect to avoid mutating location during render (React StrictMode safe)
+    useEffect(() => {
+        if (!user) navigate('login');
+        else if (!cycleDay) navigate('setup');
+    }, [user, cycleDay]);
 
-    if (!cycleDay) {
-        navigate('setup');
-        return null;
-    }
+    if (!user || !cycleDay) return null;
 
     const { phase, dayInPhase } = getPhaseForDay(cycleDay);
     const initial = (user?.name || '?')[0].toUpperCase();

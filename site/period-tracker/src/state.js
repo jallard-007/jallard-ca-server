@@ -74,7 +74,9 @@ export const PHASES = [
 export const CYCLE_LENGTH = PHASES.reduce((sum, p) => sum + p.days, 0); // 28
 
 // ── HTML escaping ──────────────────────────────────────────────────────────────
-
+// Retained for future non-JSX rendering (e.g. PocketBase email templates,
+// server-rendered HTML). React JSX auto-escapes text content; call this
+// only when inserting user data into raw HTML strings.
 export function escapeHtml(str) {
     return String(str)
         .replace(/&/g, '&amp;')
@@ -116,7 +118,14 @@ export function clearUser() {
  * birthday. Returns null for missing, invalid, or future birthdays.
  */
 export function getCycleDay(birthday) {
-    const birth = new Date(birthday);
+    if (!birthday || typeof birthday !== 'string') return null;
+    // Parse YYYY-MM-DD as local midnight (no suffix = UTC in V8, so append
+    // T00:00:00 to force local-time interpretation and avoid off-by-one in
+    // timezones behind UTC).
+    const localStr = /^\d{4}-\d{2}-\d{2}$/.test(birthday)
+        ? birthday + 'T00:00:00'
+        : birthday;
+    const birth = new Date(localStr);
     if (Number.isNaN(birth.getTime())) {
         return null;
     }

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { getUser } from './state.js';
+import { getUser, getCycleDay } from './state.js';
 import Login from './pages/Login.jsx';
 import Setup from './pages/Setup.jsx';
 import Home from './pages/Home.jsx';
@@ -9,8 +9,9 @@ const VALID_ROUTES = ['login', 'setup', 'home', 'profile'];
 
 function resolveRoute(raw, user) {
     const route = VALID_ROUTES.includes(raw) ? raw : 'login';
-    if (!user && route !== 'login') return 'login';
-    if (user && (!user.name || !user.birthday) && route !== 'setup') return 'setup';
+    const isLoggedIn = Boolean(user?.loggedIn);
+    if (!isLoggedIn && route !== 'login') return 'login';
+    if (isLoggedIn && (!user.name || !getCycleDay(user.birthday)) && route !== 'setup') return 'setup';
     return route;
 }
 

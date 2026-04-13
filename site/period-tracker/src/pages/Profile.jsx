@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { getUser, saveUser, clearUser, getCycleDay, getPhaseForDay, PHASES } from '../state.js';
 import { navigate } from '../App.jsx';
 
@@ -11,6 +11,14 @@ export default function Profile() {
     const [error, setError] = useState('');
     const [success, setSuccess] = useState(false);
 
+    const successTimerRef = useRef(null);
+
+    // Clear pending timer when component unmounts to avoid state update on
+    // an unmounted component.
+    useEffect(() => () => {
+        if (successTimerRef.current) clearTimeout(successTimerRef.current);
+    }, []);
+
     const initial = (user?.name || '?')[0].toUpperCase();
 
     function handleSubmit(e) {
@@ -20,13 +28,18 @@ export default function Profile() {
 
         if (!name.trim()) { setError('Name cannot be empty.'); return; }
         if (!birthday)    { setError('Birthday is required.'); return; }
+        if (!getCycleDay(birthday)) {
+            setError('Birthday must be a valid date that is not in the future.');
+            return;
+        }
         if (password && password !== confirm) { setError('Passwords do not match.'); return; }
 
         const updates = { name: name.trim(), birthday };
-        if (password) updates.passwordHint = '(set)';
+        if (password) updates.passwordHint = '(set)'; // Temporary — will be replaced by PocketBase auth
         saveUser(updates);
         setSuccess(true);
-        setTimeout(() => setSuccess(false), 3000);
+        if (successTimerRef.current) clearTimeout(successTimerRef.current);
+        successTimerRef.current = setTimeout(() => setSuccess(false), 3000);
     }
 
     // Derive phase color from cycle state (works even if Home hasn't mounted)

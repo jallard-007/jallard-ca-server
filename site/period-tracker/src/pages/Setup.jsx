@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { saveUser, getUser } from '../state.js';
+import { saveUser, getUser, getCycleDay } from '../state.js';
 import { navigate } from '../App.jsx';
 
 export default function Setup() {
@@ -12,6 +12,10 @@ export default function Setup() {
         e.preventDefault();
         if (!name.trim()) { setError('Please enter your name.'); return; }
         if (!birthday)    { setError('Please enter your birthday.'); return; }
+        if (!getCycleDay(birthday)) {
+            setError('Please enter a valid birthday that is not in the future.');
+            return;
+        }
         setError('');
         saveUser({ name: name.trim(), birthday });
         navigate('home');
@@ -26,8 +30,9 @@ export default function Setup() {
 
                 <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-5">
                     <div className="flex flex-col gap-1.5">
-                        <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Your name</label>
+                        <label htmlFor="setup-name" className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Your name</label>
                         <input
+                            id="setup-name"
                             type="text"
                             value={name}
                             onChange={e => setName(e.target.value)}
@@ -38,8 +43,9 @@ export default function Setup() {
                         />
                     </div>
                     <div className="flex flex-col gap-1.5">
-                        <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Birthday</label>
+                        <label htmlFor="setup-birthday" className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Birthday</label>
                         <input
+                            id="setup-birthday"
                             type="date"
                             value={birthday}
                             onChange={e => setBirthday(e.target.value)}

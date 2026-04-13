@@ -14,6 +14,7 @@ export default function Login() {
             return;
         }
         setError('');
+        // Temporary stub — authentication will be handled by PocketBase once integrated.
         saveUser({ email, loggedIn: true });
         navigate('setup');
     }
@@ -26,8 +27,9 @@ export default function Login() {
                 <p className="text-center text-gray-400 text-sm mb-8">Your personal cycle companion</p>
 
                 <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-5">
-                    <Field label="Email">
+                    <Field label="Email" htmlFor="login-email">
                         <input
+                            id="login-email"
                             type="email"
                             value={email}
                             onChange={e => setEmail(e.target.value)}
@@ -37,8 +39,9 @@ export default function Login() {
                             className="input"
                         />
                     </Field>
-                    <Field label="Password">
+                    <Field label="Password" htmlFor="login-password">
                         <input
+                            id="login-password"
                             type="password"
                             value={password}
                             onChange={e => setPassword(e.target.value)}
@@ -62,10 +65,10 @@ export default function Login() {
     );
 }
 
-function Field({ label, children }) {
+function Field({ label, htmlFor, children }) {
     return (
         <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider">{label}</label>
+            <label htmlFor={htmlFor} className="text-xs font-semibold text-gray-500 uppercase tracking-wider">{label}</label>
             {children}
         </div>
     );
