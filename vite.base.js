@@ -3,13 +3,14 @@ import { compression } from 'vite-plugin-compression2';
 const ALREADY_COMPRESSED = /\.(png|jpe?g|webp|gif|avif|woff2|mp3|ogg|aac|flac|wav|zip|br|gz|zst)$/i;
 
 /**
- * @param {{ base: string, outDir: string, port: number, manualChunks?: Record<string,string[]>|null, extraPlugins?: import('vite').Plugin[] }} options
+ * @param {{ base: string, outDir: string, port: number, manualChunks?: Record<string,string[]>|null, extraPlugins?: import('vite').Plugin[], proxy?: Record<string,string|object> }} options
  *
  * Pass `manualChunks: null` to disable chunk splitting (e.g. for non-Phaser sites).
  * Omit to use the default Phaser chunk split.
  * Pass `extraPlugins` to prepend plugins (e.g. React, Tailwind) before compression.
+ * Pass `proxy` to forward requests during dev (e.g. { '/api': 'http://localhost:8080' }).
  */
-export function createViteConfig({ base, outDir, port, manualChunks = { phaser: ['phaser'] }, extraPlugins = [] }) {
+export function createViteConfig({ base, outDir, port, manualChunks = { phaser: ['phaser'] }, extraPlugins = [], proxy }) {
     return ({ mode }) => {
         const isProd = mode === 'production';
 
@@ -44,6 +45,7 @@ export function createViteConfig({ base, outDir, port, manualChunks = { phaser: 
             },
             server: {
                 port,
+                ...(proxy && { proxy }),
             },
         };
     };

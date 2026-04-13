@@ -3,6 +3,6 @@ import { createViteConfig } from '../../vite.base.js';
 
 export default defineConfig(createViteConfig({
     base: '/bunny-garden/',
-    outDir: '../../dist/bunny-garden',
+    outDir: '../../dev/bunny-garden',
     port: 5174,
 }));

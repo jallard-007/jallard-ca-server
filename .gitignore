@@ -1,6 +1,8 @@
 /srv
 /dist/
+/dev/
 /prod/
+/pb_data/
 node_modules/
 /todo.md
 /nohup.out

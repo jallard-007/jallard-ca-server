@@ -87,28 +87,88 @@ export function escapeHtml(str) {
         .replace(/`/g, '&#96;');
 }
 
-// ── User state ─────────────────────────────────────────────────────────────────
+// ── User state (PocketBase auth store only — no localStorage) ──────────────────
 
-const STORAGE_KEY = 'pt_user';
+import pb from './pb.js';
 
+/**
+ * Returns the current user from PocketBase auth store, or null.
+ * Shape: { email, name, birthday, loggedIn }
+ */
 export function getUser() {
-    try {
-        const raw = localStorage.getItem(STORAGE_KEY);
-        return raw ? JSON.parse(raw) : null;
-    } catch {
-        return null;
+    if (pb.authStore.isValid && pb.authStore.record) {
+        const r = pb.authStore.record;
+        return {
+            email: r.email || '',
+            name: r.name || '',
+            birthday: r.birthday || '',
+            loggedIn: true,
+        };
     }
-}
-
-export function saveUser(data) {
-    const existing = getUser() || {};
-    const updated = { ...existing, ...data };
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
-    return updated;
+    return null;
 }
 
 export function clearUser() {
-    localStorage.removeItem(STORAGE_KEY);
+    pb.authStore.clear();
+}
+
+// ── PocketBase auth helpers ────────────────────────────────────────────────────
+
+/**
+ * Register a new user with email/password.
+ * Returns the authenticated record after auto-login.
+ * Throws on failure.
+ */
+export async function register(email, password) {
+    await pb.collection('users').create({
+        email,
+        password,
+        passwordConfirm: password,
+    });
+
+    // Auto-login after registration
+    const result = await pb.collection('users').authWithPassword(email, password);
+    return result.record;
+}
+
+/**
+ * Login with email/password. Returns the auth record.
+ * Throws on failure.
+ */
+export async function login(email, password) {
+    const result = await pb.collection('users').authWithPassword(email, password);
+    return result.record;
+}
+
+/**
+ * Update the authenticated user's profile fields.
+ * Throws on failure.
+ */
+export async function updateProfile(data) {
+    if (!pb.authStore.isValid || !pb.authStore.record) {
+        throw new Error('Not authenticated');
+    }
+    const id = pb.authStore.record.id;
+    const updated = await pb.collection('users').update(id, data);
+    // Properly update the auth store record with latest data
+    pb.authStore.save(pb.authStore.token, updated);
+    return updated;
+}
+
+/**
+ * Change the authenticated user's password.
+ * Requires oldPassword and newPassword.
+ */
+export async function changePassword(oldPassword, newPassword) {
+    if (!pb.authStore.isValid || !pb.authStore.record) {
+        throw new Error('Not authenticated');
+    }
+    const id = pb.authStore.record.id;
+    await pb.collection('users').update(id, {
+        oldPassword,
+        password: newPassword,
+        passwordConfirm: newPassword,
+    });
 }
 
 // ── Phase calculation ──────────────────────────────────────────────────────────
