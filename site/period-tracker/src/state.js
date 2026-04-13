@@ -73,6 +73,17 @@ export const PHASES = [
 
 export const CYCLE_LENGTH = PHASES.reduce((sum, p) => sum + p.days, 0); // 28
 
+// ── HTML escaping ──────────────────────────────────────────────────────────────
+
+export function escapeHtml(str) {
+    return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
 // ── User state ─────────────────────────────────────────────────────────────────
 
 const STORAGE_KEY = 'pt_user';
@@ -101,18 +112,26 @@ export function clearUser() {
 
 /**
  * Returns the 1-based cycle day (1–28) for today, derived from the user's
- * birthday.  We walk forward from the birthday in 28-day steps to find the
- * most-recent cycle start that is on or before today.
+ * birthday. Returns null for missing, invalid, or future birthdays.
  */
 export function getCycleDay(birthday) {
     const birth = new Date(birthday);
+    if (Number.isNaN(birth.getTime())) {
+        return null;
+    }
+
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     birth.setHours(0, 0, 0, 0);
 
+    if (birth > today) {
+        return null;
+    }
+
     const msPerDay = 86400000;
     const daysSinceBirth = Math.floor((today - birth) / msPerDay);
-    const cycleDay = (daysSinceBirth % CYCLE_LENGTH) + 1;
+    // Use double-modulo to handle any negative remainder in JS
+    const cycleDay = ((daysSinceBirth % CYCLE_LENGTH) + CYCLE_LENGTH) % CYCLE_LENGTH + 1;
     return cycleDay;
 }
 

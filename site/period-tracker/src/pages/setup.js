@@ -1,4 +1,4 @@
-import { saveUser } from '../state.js';
+import { saveUser, getUser } from '../state.js';
 import { navigate } from '../router.js';
 
 export function renderSetup(app) {
@@ -38,11 +38,9 @@ export function renderSetup(app) {
     // Pre-fill if data already exists
     const savedName = document.getElementById('name');
     const savedBirthday = document.getElementById('birthday');
-    try {
-        const user = JSON.parse(localStorage.getItem('pt_user') || '{}');
-        if (user.name) savedName.value = user.name;
-        if (user.birthday) savedBirthday.value = user.birthday;
-    } catch { /* ignore */ }
+    const existing = getUser();
+    if (existing?.name) savedName.value = existing.name;
+    if (existing?.birthday) savedBirthday.value = existing.birthday;
 
     document.getElementById('setup-form').addEventListener('submit', (e) => {
         e.preventDefault();

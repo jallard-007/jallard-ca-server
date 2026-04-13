@@ -1,4 +1,4 @@
-import { getUser, saveUser, clearUser } from '../state.js';
+import { getUser, saveUser, clearUser, escapeHtml } from '../state.js';
 import { navigate } from '../router.js';
 
 export function renderProfile(app) {
@@ -15,8 +15,8 @@ export function renderProfile(app) {
             </header>
 
             <div class="profile-avatar-wrap">
-                <div class="profile-avatar">${(user?.name || '?')[0].toUpperCase()}</div>
-                <p class="profile-email">${user?.email || ''}</p>
+                <div class="profile-avatar">${escapeHtml((user?.name || '?')[0].toUpperCase())}</div>
+                <p class="profile-email">${escapeHtml(user?.email || '')}</p>
             </div>
 
             <form id="profile-form" class="profile-form" novalidate>
@@ -24,11 +24,11 @@ export function renderProfile(app) {
 
                 <div class="field-group">
                     <label for="p-name">Display name</label>
-                    <input id="p-name" type="text" value="${escapeAttr(user?.name || '')}" placeholder="Your name" required>
+                    <input id="p-name" type="text" value="${escapeHtml(user?.name || '')}" placeholder="Your name" required>
                 </div>
                 <div class="field-group">
                     <label for="p-birthday">Birthday</label>
-                    <input id="p-birthday" type="date" value="${escapeAttr(user?.birthday || '')}">
+                    <input id="p-birthday" type="date" value="${escapeHtml(user?.birthday || '')}" required>
                     <small class="field-hint">Used to estimate your cycle phase.</small>
                 </div>
 
@@ -78,6 +78,11 @@ export function renderProfile(app) {
             errorEl.classList.remove('hidden');
             return;
         }
+        if (!birthday) {
+            errorEl.textContent = 'Birthday is required.';
+            errorEl.classList.remove('hidden');
+            return;
+        }
         if (password && password !== confirm) {
             errorEl.textContent = 'Passwords do not match.';
             errorEl.classList.remove('hidden');
@@ -91,13 +96,4 @@ export function renderProfile(app) {
         successEl.classList.remove('hidden');
         setTimeout(() => successEl.classList.add('hidden'), 3000);
     });
-}
-
-function escapeAttr(str) {
-    return String(str)
-        .replace(/&/g, '&amp;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#39;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;');
 }

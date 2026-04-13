@@ -1,4 +1,4 @@
-import { getUser, getCycleDay, getPhaseForDay, PHASES, CYCLE_LENGTH } from '../state.js';
+import { getUser, getCycleDay, getPhaseForDay, PHASES, CYCLE_LENGTH, escapeHtml } from '../state.js';
 import { navigate } from '../router.js';
 
 const CX = 160;
@@ -45,6 +45,9 @@ function buildTimeline(cycleDay) {
                 stroke-linecap="butt"
                 class="phase-arc"
                 data-phase="${idx}"
+                tabindex="0"
+                role="button"
+                aria-label="${phase.label} phase"
                 style="cursor:pointer"
             />`;
 
@@ -67,7 +70,7 @@ function buildTimeline(cycleDay) {
     const userAngle = ((cycleDay - 1) / CYCLE_LENGTH) * 360;
     const markerPos = polarToXY(userAngle, R);
     const user = getUser();
-    const initial = (user?.name || '?')[0].toUpperCase();
+    const initial = escapeHtml((user?.name || '?')[0].toUpperCase());
 
     svg += `
         <circle
@@ -102,7 +105,15 @@ function buildTimeline(cycleDay) {
 export function renderHome(app) {
     const user = getUser();
     const cycleDay = getCycleDay(user.birthday);
+
+    // Birthday invalid or future — send back to setup
+    if (!cycleDay) {
+        navigate('setup');
+        return;
+    }
+
     const { phase, dayInPhase } = getPhaseForDay(cycleDay);
+    const safeName = escapeHtml(user.name);
 
     // Apply phase theme to root
     document.documentElement.style.setProperty('--phase-color', phase.color);
@@ -112,10 +123,10 @@ export function renderHome(app) {
         <div class="home-page" style="--phase-color:${phase.color};--phase-color-light:${phase.colorLight}">
             <header class="top-bar">
                 <div class="top-bar-left">
-                    <span class="greeting">Hi, ${user.name} ${phase.emoji}</span>
+                    <span class="greeting">Hi, ${safeName} ${phase.emoji}</span>
                 </div>
                 <button class="icon-btn" id="profile-btn" title="Profile" aria-label="Profile">
-                    <span class="avatar">${user.name[0].toUpperCase()}</span>
+                    <span class="avatar">${escapeHtml(user.name[0].toUpperCase())}</span>
                 </button>
             </header>
 
@@ -226,6 +237,13 @@ export function renderHome(app) {
             } else {
                 tooltip.classList.add('hidden');
                 showDetailPanel(idx);
+            }
+        });
+
+        arc.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                arc.dispatchEvent(new MouseEvent('click'));
             }
         });
     });

@@ -26,8 +26,8 @@ function resolve() {
         window.location.hash = 'login';
         return;
     }
-    // Guard: user exists but setup incomplete → setup
-    if (user && !user.name && hash !== 'setup') {
+    // Guard: user exists but setup incomplete (missing name or birthday) → setup
+    if (user && (!user.name || !user.birthday) && hash !== 'setup') {
         window.location.hash = 'setup';
         return;
     }
@@ -37,7 +37,7 @@ function resolve() {
         currentRoute = hash;
         handler();
     } else if (!handler) {
-        window.location.hash = user ? (user.name ? 'home' : 'setup') : 'login';
+        window.location.hash = user ? (user.name && user.birthday ? 'home' : 'setup') : 'login';
     }
 }
 
