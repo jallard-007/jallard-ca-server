@@ -5,7 +5,6 @@ import { navigate } from '../App.jsx';
 export default function Profile() {
     const user = getUser();
     const [name, setName] = useState(user?.name || '');
-    const [birthday, setBirthday] = useState(user?.birthday || '');
     const [oldPassword, setOldPassword] = useState('');
     const [password, setPassword] = useState('');
     const [confirm, setConfirm] = useState('');
@@ -29,18 +28,13 @@ export default function Profile() {
         setSuccess(false);
 
         if (!name.trim()) { setError('Name cannot be empty.'); return; }
-        if (!birthday)    { setError('Birthday is required.'); return; }
-        if (!getCycleDay(birthday)) {
-            setError('Birthday must be a valid date that is not in the future.');
-            return;
-        }
         if (password && password.length < 8) { setError('New password must be at least 8 characters.'); return; }
         if (password && password !== confirm) { setError('Passwords do not match.'); return; }
         if (password && !oldPassword) { setError('Please enter your current password to change it.'); return; }
 
         setLoading(true);
         try {
-            await updateProfile({ name: name.trim(), birthday });
+            await updateProfile({ name: name.trim() });
 
             if (password) {
                 try {
@@ -67,7 +61,7 @@ export default function Profile() {
     }
 
     // Derive phase color from cycle state (works even if Home hasn't mounted)
-    const cycleDay = user ? getCycleDay(user.birthday) : null;
+    const cycleDay = user ? getCycleDay() : null;
     const phaseColor = cycleDay ? getPhaseForDay(cycleDay).phase.color : PHASES[0].color;
 
     return (
@@ -75,7 +69,7 @@ export default function Profile() {
             {/* Top bar */}
             <header className="sticky top-0 z-10 flex items-center justify-between px-4 py-3.5 bg-white border-b border-gray-100 shadow-sm max-w-lg mx-auto">
                 <button
-                    onClick={() => navigate('home')}
+                    onClick={() => navigate('/')}
                     aria-label="Back"
                     className="w-9 h-9 rounded-full flex items-center justify-center text-gray-500 hover:bg-gray-100 transition-colors text-lg"
                 >←</button>
@@ -102,7 +96,6 @@ export default function Profile() {
                         <ProfileField
                             label="Display name"
                             htmlFor="p-name"
-                            border
                         >
                             <input
                                 id="p-name"
@@ -110,16 +103,6 @@ export default function Profile() {
                                 value={name}
                                 onChange={e => setName(e.target.value)}
                                 placeholder="Your name"
-                                required
-                                className="input-inline"
-                            />
-                        </ProfileField>
-                        <ProfileField label="Birthday" htmlFor="p-birthday">
-                            <input
-                                id="p-birthday"
-                                type="date"
-                                value={birthday}
-                                onChange={e => setBirthday(e.target.value)}
                                 required
                                 className="input-inline"
                             />
@@ -182,7 +165,7 @@ export default function Profile() {
 
                 <div className="px-4 mt-4">
                     <button
-                        onClick={() => { clearUser(); navigate('login'); }}
+                        onClick={() => { clearUser(); navigate('/login'); }}
                         className="w-full py-3 rounded-xl border-2 border-gray-200 text-gray-500 font-semibold text-sm hover:bg-gray-100 transition-colors"
                     >
                         Sign out

@@ -5,6 +5,7 @@ import { navigate } from '../App.jsx';
 export default function Login() {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const [confirm, setConfirm] = useState('');
     const [isRegister, setIsRegister] = useState(false);
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
@@ -19,19 +20,22 @@ export default function Login() {
             setError('Password must be at least 8 characters.');
             return;
         }
+        if (isRegister && password !== confirm) {
+            setError('Passwords do not match.');
+            return;
+        }
         setError('');
         setLoading(true);
         try {
             if (isRegister) {
                 await register(email, password);
-                navigate('setup');
+                navigate('/setup');
             } else {
                 const user = await login(email, password);
-                // If profile is already complete, go home; otherwise setup
-                if (user.name && user.birthday) {
-                    navigate('home');
+                if (user.name) {
+                    navigate('/');
                 } else {
-                    navigate('setup');
+                    navigate('/setup');
                 }
             }
         } catch (err) {
@@ -76,6 +80,20 @@ export default function Login() {
                             className="input"
                         />
                     </Field>
+                    {isRegister && (
+                        <Field label="Confirm password" htmlFor="login-confirm">
+                            <input
+                                id="login-confirm"
+                                type="password"
+                                value={confirm}
+                                onChange={e => setConfirm(e.target.value)}
+                                placeholder="••••••••"
+                                autoComplete="new-password"
+                                required
+                                className="input"
+                            />
+                        </Field>
+                    )}
 
                     {error && <ErrorMsg>{error}</ErrorMsg>}
 
@@ -88,8 +106,8 @@ export default function Login() {
                     {isRegister ? 'Already have an account?' : "Don't have an account?"}{' '}
                     <button
                         type="button"
-                        onClick={() => { setIsRegister(!isRegister); setError(''); }}
-                        className="text-pink-500 hover:text-pink-600 font-semibold"
+                        onClick={() => { setIsRegister(!isRegister); setError(''); setConfirm(''); }}
+                        className="text-pink-500 hover:text-pink-600 font-semibold cursor-pointer"
                     >
                         {isRegister ? 'Sign in' : 'Create one'}
                     </button>

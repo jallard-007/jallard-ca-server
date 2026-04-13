@@ -168,15 +168,15 @@ function PhaseDetailPanel({ phaseIdx, onClose }) {
 
 export default function Home() {
     const user = getUser();
-    const cycleDay = user ? getCycleDay(user.birthday) : null;
+    const cycleDay = user ? getCycleDay() : null;
 
     const [expandedPhaseIdx, setExpandedPhaseIdx] = useState(null);
 
     // Redirect in effect to avoid mutating location during render (React StrictMode safe)
     useEffect(() => {
-        if (!user) navigate('login');
-        else if (!cycleDay) navigate('setup');
-    }, [user, cycleDay]);
+        if (!user) navigate('/login');
+        else if (!user.name) navigate('/setup');
+    }, [user]);
 
     if (!user || !cycleDay) return null;
 
@@ -195,7 +195,7 @@ export default function Home() {
                     Hi, {user.name} {phase.emoji}
                 </span>
                 <button
-                    onClick={() => navigate('profile')}
+                    onClick={() => navigate('/profile')}
                     title="Profile"
                     aria-label="Profile"
                     className="w-9 h-9 rounded-full flex items-center justify-center text-white font-bold text-sm shadow-md"

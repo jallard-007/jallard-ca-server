@@ -1,28 +1,28 @@
 import { useState } from 'react';
-import { getUser, getCycleDay, updateProfile } from '../state.js';
+import { getUser, updateProfile, clearUser } from '../state.js';
 import { navigate } from '../App.jsx';
 
 export default function Setup() {
     const existing = getUser();
     const [name, setName] = useState(existing?.name || '');
-    const [birthday, setBirthday] = useState(existing?.birthday || '');
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
 
     async function handleSubmit(e) {
         e.preventDefault();
         if (!name.trim()) { setError('Please enter your name.'); return; }
-        if (!birthday)    { setError('Please enter your birthday.'); return; }
-        if (!getCycleDay(birthday)) {
-            setError('Please enter a valid birthday that is not in the future.');
-            return;
-        }
         setError('');
         setLoading(true);
         try {
-            await updateProfile({ name: name.trim(), birthday });
-            navigate('home');
+            await updateProfile({ name: name.trim() });
+            navigate('/');
         } catch (err) {
+            const status = err?.status;
+            if (status === 404 || status === 401 || status === 403) {
+                clearUser();
+                navigate('/login');
+                return;
+            }
             const msg = err?.response?.data?.message || err?.message || 'Save failed.';
             setError(msg);
         } finally {
@@ -50,18 +50,6 @@ export default function Setup() {
                             required
                             className="input"
                         />
-                    </div>
-                    <div className="flex flex-col gap-1.5">
-                        <label htmlFor="setup-birthday" className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Birthday</label>
-                        <input
-                            id="setup-birthday"
-                            type="date"
-                            value={birthday}
-                            onChange={e => setBirthday(e.target.value)}
-                            required
-                            className="input"
-                        />
-                        <span className="text-xs text-gray-400">Used to estimate your current cycle phase.</span>
                     </div>
 
                     {error && (

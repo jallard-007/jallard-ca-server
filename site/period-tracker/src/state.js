@@ -93,7 +93,7 @@ import pb from './pb.js';
 
 /**
  * Returns the current user from PocketBase auth store, or null.
- * Shape: { email, name, birthday, loggedIn }
+ * Shape: { email, name, loggedIn }
  */
 export function getUser() {
     if (pb.authStore.isValid && pb.authStore.record) {
@@ -101,7 +101,6 @@ export function getUser() {
         return {
             email: r.email || '',
             name: r.name || '',
-            birthday: r.birthday || '',
             loggedIn: true,
         };
     }
@@ -173,36 +172,16 @@ export async function changePassword(oldPassword, newPassword) {
 
 // ── Phase calculation ──────────────────────────────────────────────────────────
 
+// Default cycle day: middle of follicular phase (menstrual 5 + 4 = day 9)
+const DEFAULT_CYCLE_DAY = 9;
+
 /**
- * Returns the 1-based cycle day (1–28) for today, derived from the user's
- * birthday. Returns null for missing, invalid, or future birthdays.
+ * Returns the 1-based cycle day (1–28) for today.
+ * Currently returns a fixed default. Will be replaced with
+ * a proper cycle-tracking mechanism later.
  */
-export function getCycleDay(birthday) {
-    if (!birthday || typeof birthday !== 'string') return null;
-    // Parse YYYY-MM-DD as local midnight (no suffix = UTC in V8, so append
-    // T00:00:00 to force local-time interpretation and avoid off-by-one in
-    // timezones behind UTC).
-    const localStr = /^\d{4}-\d{2}-\d{2}$/.test(birthday)
-        ? birthday + 'T00:00:00'
-        : birthday;
-    const birth = new Date(localStr);
-    if (Number.isNaN(birth.getTime())) {
-        return null;
-    }
-
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    birth.setHours(0, 0, 0, 0);
-
-    if (birth > today) {
-        return null;
-    }
-
-    const msPerDay = 86400000;
-    const daysSinceBirth = Math.floor((today - birth) / msPerDay);
-    // daysSinceBirth is always ≥ 0 here (future birthday guarded above)
-    const cycleDay = (daysSinceBirth % CYCLE_LENGTH) + 1;
-    return cycleDay;
+export function getCycleDay() {
+    return DEFAULT_CYCLE_DAY;
 }
 
 /**

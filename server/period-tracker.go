@@ -39,6 +39,10 @@ func NewPeriodTrackerApiServer(dataRoot string) (*PeriodTrackerApiServer, error)
 		return nil, fmt.Errorf("pb migrations %s: %w", PERIOD_TRACKER_SITE_NAME, err)
 	}
 
+	if err := ConfigurePeriodTracker(app); err != nil {
+		return nil, fmt.Errorf("pb configure %s: %w", PERIOD_TRACKER_SITE_NAME, err)
+	}
+
 	pbRouter, err := apis.NewRouter(app)
 	if err != nil {
 		return nil, fmt.Errorf("pb router %s: %w", PERIOD_TRACKER_SITE_NAME, err)
@@ -57,7 +61,7 @@ func NewPeriodTrackerApiServer(dataRoot string) (*PeriodTrackerApiServer, error)
 	return s, nil
 }
 
-// ConfigurePeriodTracker adds custom fields (name, birthday) to the
+// ConfigurePeriodTracker adds custom fields (name) to the
 // users collection and sets the sender email for the period-tracker
 // PocketBase instance.
 func ConfigurePeriodTracker(app core.App) error {
@@ -88,17 +92,6 @@ func ConfigurePeriodTracker(app core.App) error {
 		changed = true
 	} else if _, ok := nameField.(*core.TextField); !ok {
 		return fmt.Errorf("users.name field exists but is not a TextField (type: %T)", nameField)
-	}
-
-	birthdayField := users.Fields.GetByName("birthday")
-	if birthdayField == nil {
-		users.Fields.Add(&core.TextField{
-			Name: "birthday",
-			Max:  10, // YYYY-MM-DD
-		})
-		changed = true
-	} else if _, ok := birthdayField.(*core.TextField); !ok {
-		return fmt.Errorf("users.birthday field exists but is not a TextField (type: %T)", birthdayField)
 	}
 
 	if changed {
