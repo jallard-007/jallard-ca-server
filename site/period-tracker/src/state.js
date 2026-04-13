@@ -150,9 +150,8 @@ export async function updateProfile(data) {
     }
     const id = pb.authStore.record.id;
     const updated = await pb.collection('users').update(id, data);
-    // Refresh local auth store record with latest data
-    pb.authStore.record.name = updated.name || '';
-    pb.authStore.record.birthday = updated.birthday || '';
+    // Properly update the auth store record with latest data
+    pb.authStore.save(pb.authStore.token, updated);
     return updated;
 }
 
