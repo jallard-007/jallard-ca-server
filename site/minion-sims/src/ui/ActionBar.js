@@ -72,7 +72,7 @@ class ActionBarClass {
       const relBtn = document.createElement('button');
       relBtn.className = 'action-btn danger';
       relBtn.textContent = '🚪 Release';
-      relBtn.addEventListener('click', () => {
+      this._addButtonHandler(relBtn, () => {
         if (confirm(`Send ${primary.name} away? This cannot be undone.`)) {
           GameState.deleteMinion(primary.id);
           GameState.clearSelection();
@@ -86,7 +86,7 @@ class ActionBarClass {
     pinBtn.className = 'action-btn' + (primary.pinned ? ' active-toggle' : '');
     pinBtn.textContent = primary.pinned ? '📌 Pinned' : '📌 Pin';
     pinBtn.title = 'Toggle: stop minion from wandering';
-    pinBtn.addEventListener('click', () => {
+    this._addButtonHandler(pinBtn, () => {
       GameState.setMinionPinned(primary.id, !primary.pinned);
       if (primary.pinned && GameState.activeScene?.minionSprites) {
         const spr = GameState.activeScene.minionSprites.get(primary.id);
@@ -99,7 +99,7 @@ class ActionBarClass {
     const deselBtn = document.createElement('button');
     deselBtn.className = 'action-btn';
     deselBtn.textContent = '✖ Deselect';
-    deselBtn.addEventListener('click', () => GameState.clearSelection());
+    this._addButtonHandler(deselBtn, () => GameState.clearSelection());
     infoRow.appendChild(deselBtn);
     inner.appendChild(infoRow);
 
@@ -150,12 +150,12 @@ class ActionBarClass {
 
     if (!check.ok) {
       btn.classList.add('unavailable');
-      btn.addEventListener('click', (e) => {
+      this._addButtonHandler(btn, (e) => {
         this._showTooltip(btn, check.reason);
         e.stopPropagation();
       });
     } else {
-      btn.addEventListener('click', () => {
+      this._addButtonHandler(btn, () => {
         this._dismissTooltip();
         AudioManager.play('ui-click');
         const scene = GameState.activeScene;
@@ -202,6 +202,19 @@ class ActionBarClass {
       });
     }
     return btn;
+  }
+
+  _addButtonHandler(btn, handler) {
+    btn.addEventListener('click', handler);
+    btn.addEventListener('touchend', (e) => {
+      if (!e.changedTouches.length) return;
+      const touch = e.changedTouches[0];
+      const el = document.elementFromPoint(touch.clientX, touch.clientY);
+      if (btn.contains(el)) {
+        e.preventDefault();
+        handler(e);
+      }
+    });
   }
 
   _showTooltip(anchorEl, text) {
