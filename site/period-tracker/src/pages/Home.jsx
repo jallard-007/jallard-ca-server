@@ -26,6 +26,7 @@ function getDayRange(phaseIdx) {
 function CycleTimeline({ cycleDay, onPhaseClick }) {
     const [tooltip, setTooltip] = useState(null); // { idx, x, y }
     const svgRef = useRef(null);
+    const containerRectRef = useRef(null);
 
     let angleCursor = 0;
     const arcs = PHASES.map((phase, idx) => {
@@ -71,11 +72,12 @@ function CycleTimeline({ cycleDay, onPhaseClick }) {
                             onClick={() => onPhaseClick(idx)}
                             onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onPhaseClick(idx); } }}
                             onMouseEnter={e => {
-                                const rect = svgRef.current?.parentElement?.getBoundingClientRect() || { left: 0, top: 0 };
+                                containerRectRef.current = svgRef.current?.parentElement?.getBoundingClientRect() || { left: 0, top: 0 };
+                                const rect = containerRectRef.current;
                                 setTooltip({ idx, x: e.clientX - rect.left, y: e.clientY - rect.top });
                             }}
                             onMouseMove={e => {
-                                const rect = svgRef.current?.parentElement?.getBoundingClientRect() || { left: 0, top: 0 };
+                                const rect = containerRectRef.current || { left: 0, top: 0 };
                                 setTooltip(t => t ? { ...t, x: e.clientX - rect.left, y: e.clientY - rect.top } : null);
                             }}
                             onMouseLeave={() => setTooltip(null)}
