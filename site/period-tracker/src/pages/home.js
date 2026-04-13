@@ -126,7 +126,7 @@ export function renderHome(app) {
                     <span class="greeting">Hi, ${safeName} ${phase.emoji}</span>
                 </div>
                 <button class="icon-btn" id="profile-btn" title="Profile" aria-label="Profile">
-                    <span class="avatar">${escapeHtml(user.name[0].toUpperCase())}</span>
+                    <span class="avatar">${escapeHtml((user.name || '?')[0].toUpperCase())}</span>
                 </button>
             </header>
 
@@ -229,7 +229,7 @@ export function renderHome(app) {
             tooltip.classList.add('hidden');
         });
 
-        arc.addEventListener('click', () => {
+        const handleArcActivate = () => {
             if (expandedPhaseIdx === idx) {
                 expandedPhaseIdx = null;
                 detailPanel.classList.add('hidden');
@@ -238,12 +238,14 @@ export function renderHome(app) {
                 tooltip.classList.add('hidden');
                 showDetailPanel(idx);
             }
-        });
+        };
+
+        arc.addEventListener('click', handleArcActivate);
 
         arc.addEventListener('keydown', (e) => {
             if (e.key === 'Enter' || e.key === ' ') {
                 e.preventDefault();
-                arc.dispatchEvent(new MouseEvent('click'));
+                handleArcActivate();
             }
         });
     });

@@ -81,7 +81,8 @@ export function escapeHtml(str) {
         .replace(/</g, '&lt;')
         .replace(/>/g, '&gt;')
         .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#39;');
+        .replace(/'/g, '&#39;')
+        .replace(/`/g, '&#96;');
 }
 
 // ── User state ─────────────────────────────────────────────────────────────────
@@ -130,8 +131,8 @@ export function getCycleDay(birthday) {
 
     const msPerDay = 86400000;
     const daysSinceBirth = Math.floor((today - birth) / msPerDay);
-    // Use double-modulo to handle any negative remainder in JS
-    const cycleDay = ((daysSinceBirth % CYCLE_LENGTH) + CYCLE_LENGTH) % CYCLE_LENGTH + 1;
+    // daysSinceBirth is always ≥ 0 here (future birthday guarded above)
+    const cycleDay = (daysSinceBirth % CYCLE_LENGTH) + 1;
     return cycleDay;
 }
 
