@@ -33,6 +33,10 @@ var bunnyFacts = []string{
 }
 
 func NewServer(mux *http.ServeMux) *Server {
+	mux.HandleFunc("GET /api/minion-sims/ping", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusNoContent)
+	})
+
 	mux.HandleFunc("GET /api/bunny-fact", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		fact := bunnyFacts[rand.Intn(len(bunnyFacts))]

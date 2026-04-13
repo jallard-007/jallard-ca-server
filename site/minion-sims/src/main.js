@@ -7,3 +7,11 @@ document.addEventListener('contextmenu', (e) => {
 });
 
 const game = new Phaser.Game(gameConfig);
+
+// Ping server every 5 minutes while the game is open; first ping after 5 minutes
+const PING_INTERVAL = 5 * 60 * 1000;
+setTimeout(() => {
+  const ping = () => fetch('/api/minion-sims/ping', { method: 'GET' }).catch(() => {});
+  ping();
+  setInterval(ping, PING_INTERVAL);
+}, PING_INTERVAL);
