@@ -9,4 +9,7 @@ export default defineConfig(createViteConfig({
     port: 5175,
     manualChunks: null,
     extraPlugins: [react(), tailwindcss()],
+    proxy: {
+        '/api': 'http://localhost:8080',
+    },
 }));

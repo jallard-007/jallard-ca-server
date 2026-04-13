@@ -15,7 +15,7 @@ export default function Login() {
             setError('Please enter your email and password.');
             return;
         }
-        if (password.length < 8) {
+        if (isRegister && password.length < 8) {
             setError('Password must be at least 8 characters.');
             return;
         }

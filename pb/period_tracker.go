@@ -1,6 +1,7 @@
 package pb
 
 import (
+	"fmt"
 	"log/slog"
 
 	"github.com/pocketbase/pocketbase/core"
@@ -29,21 +30,27 @@ func ConfigurePeriodTracker(site *Site) error {
 
 	changed := false
 
-	if _, ok := users.Fields.GetByName("name").(*core.TextField); !ok {
+	nameField := users.Fields.GetByName("name")
+	if nameField == nil {
 		users.Fields.Add(&core.TextField{
 			Name:        "name",
 			Presentable: true,
 			Max:         200,
 		})
 		changed = true
+	} else if _, ok := nameField.(*core.TextField); !ok {
+		return fmt.Errorf("users.name field exists but is not a TextField (type: %T)", nameField)
 	}
 
-	if _, ok := users.Fields.GetByName("birthday").(*core.TextField); !ok {
+	birthdayField := users.Fields.GetByName("birthday")
+	if birthdayField == nil {
 		users.Fields.Add(&core.TextField{
 			Name: "birthday",
 			Max:  10, // YYYY-MM-DD
 		})
 		changed = true
+	} else if _, ok := birthdayField.(*core.TextField); !ok {
+		return fmt.Errorf("users.birthday field exists but is not a TextField (type: %T)", birthdayField)
 	}
 
 	if changed {

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { saveUser, getUser, getCycleDay, updateProfile } from '../state.js';
+import { getUser, getCycleDay, updateProfile } from '../state.js';
 import { navigate } from '../App.jsx';
 
 export default function Setup() {
@@ -23,13 +23,8 @@ export default function Setup() {
             await updateProfile({ name: name.trim(), birthday });
             navigate('home');
         } catch (err) {
-            // Save locally even if server sync fails
-            saveUser({ name: name.trim(), birthday });
-            const msg = err?.response?.data?.message || err?.message || '';
-            if (msg) {
-                setError('Saved locally. Server sync failed: ' + msg);
-            }
-            navigate('home');
+            const msg = err?.response?.data?.message || err?.message || 'Save failed.';
+            setError(msg);
         } finally {
             setLoading(false);
         }

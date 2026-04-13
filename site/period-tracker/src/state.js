@@ -87,18 +87,15 @@ export function escapeHtml(str) {
         .replace(/`/g, '&#96;');
 }
 
-// ── User state (localStorage cache + PocketBase sync) ──────────────────────────
+// ── User state (PocketBase auth store only — no localStorage) ──────────────────
 
 import pb from './pb.js';
 
-const STORAGE_KEY = 'pt_user';
-
 /**
- * Returns the locally-cached user object.
+ * Returns the current user from PocketBase auth store, or null.
  * Shape: { email, name, birthday, loggedIn }
  */
 export function getUser() {
-    // If PocketBase has a valid auth record, prefer that
     if (pb.authStore.isValid && pb.authStore.record) {
         const r = pb.authStore.record;
         return {
@@ -108,44 +105,30 @@ export function getUser() {
             loggedIn: true,
         };
     }
-
-    try {
-        const raw = localStorage.getItem(STORAGE_KEY);
-        return raw ? JSON.parse(raw) : null;
-    } catch {
-        return null;
-    }
-}
-
-export function saveUser(data) {
-    const existing = getUser() || {};
-    const updated = { ...existing, ...data };
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
-    return updated;
+    return null;
 }
 
 export function clearUser() {
-    localStorage.removeItem(STORAGE_KEY);
     pb.authStore.clear();
 }
 
 // ── PocketBase auth helpers ────────────────────────────────────────────────────
 
 /**
- * Register a new user with email/password. Returns the auth record.
+ * Register a new user with email/password.
+ * Returns the authenticated record after auto-login.
  * Throws on failure.
  */
 export async function register(email, password) {
-    const record = await pb.collection('users').create({
+    await pb.collection('users').create({
         email,
         password,
         passwordConfirm: password,
     });
 
     // Auto-login after registration
-    await pb.collection('users').authWithPassword(email, password);
-    saveUser({ email, loggedIn: true });
-    return record;
+    const result = await pb.collection('users').authWithPassword(email, password);
+    return result.record;
 }
 
 /**
@@ -154,14 +137,7 @@ export async function register(email, password) {
  */
 export async function login(email, password) {
     const result = await pb.collection('users').authWithPassword(email, password);
-    const r = result.record;
-    saveUser({
-        email: r.email || '',
-        name: r.name || '',
-        birthday: r.birthday || '',
-        loggedIn: true,
-    });
-    return r;
+    return result.record;
 }
 
 /**
@@ -174,10 +150,9 @@ export async function updateProfile(data) {
     }
     const id = pb.authStore.record.id;
     const updated = await pb.collection('users').update(id, data);
-    saveUser({
-        name: updated.name || '',
-        birthday: updated.birthday || '',
-    });
+    // Refresh local auth store record with latest data
+    pb.authStore.record.name = updated.name || '';
+    pb.authStore.record.birthday = updated.birthday || '';
     return updated;
 }
 

@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { getUser, saveUser, clearUser, getCycleDay, getPhaseForDay, PHASES, updateProfile, changePassword } from '../state.js';
+import { getUser, clearUser, getCycleDay, getPhaseForDay, PHASES, updateProfile, changePassword } from '../state.js';
 import { navigate } from '../App.jsx';
 
 export default function Profile() {
@@ -61,8 +61,6 @@ export default function Profile() {
         } catch (err) {
             const msg = err?.response?.data?.message || err?.message || 'Save failed.';
             setError(msg);
-            // Still save locally as fallback
-            saveUser({ name: name.trim(), birthday });
         } finally {
             setLoading(false);
         }
