@@ -15,7 +15,7 @@ class GameStateManager {
     ]);
     this.unlockedActions = new Set([
       'kiss', 'highfive', 'feed', 'nap', 'wake-up', 'dress-up', 'send-to-factory',
-      'recall-from-factory', 'send-to-lab', 'send-to-yard',
+      'send-to-lab', 'send-to-yard',
       'tickle', 'scold', 'procreate', 'argue', 'gift-banana',
     ]);
     this.settings = {
@@ -265,7 +265,7 @@ class GameStateManager {
     this.unlockedActions = new Set(data.unlockedActions ?? []);
     if (this.unlockedActions.size === 0) {
       ['kiss', 'highfive', 'feed', 'nap', 'wake-up', 'dress-up', 'send-to-factory',
-       'recall-from-factory', 'send-to-lab', 'send-to-yard',
+       'send-to-lab', 'send-to-yard',
        'tickle', 'scold', 'procreate', 'argue', 'gift-banana',
       ].forEach(a => this.unlockedActions.add(a));
     }

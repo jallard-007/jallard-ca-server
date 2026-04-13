@@ -5,7 +5,6 @@ import { Economy } from '../systems/Economy.js';
 import { AudioManager } from '../audio/AudioManager.js';
 import { HUD } from '../ui/HUD.js';
 import { ActionBar } from '../ui/ActionBar.js';
-import { FactoryPanel } from '../ui/FactoryPanel.js';
 import { Nursery } from '../ui/Nursery.js';
 import { Wardrobe } from '../ui/Wardrobe.js';
 import { StoryJournal } from '../ui/StoryJournal.js';
@@ -38,7 +37,6 @@ export class BootScene extends Phaser.Scene {
     // Create DOM UI overlays (once, persistent across scenes)
     HUD.create({ isNewGame: !loaded });
     ActionBar.create();
-    FactoryPanel.create();
     Nursery.create();
     Wardrobe.create();
     StoryJournal.create();

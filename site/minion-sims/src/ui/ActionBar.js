@@ -118,7 +118,6 @@ class ActionBarClass {
       const soloActions = ActionRegistry.getSoloActions();
       for (const action of soloActions) {
         // Filter context-specific actions
-        if (action.id === 'recall-from-factory' && primary.area !== 'factory') continue;
         if (action.id === 'send-to-factory' && primary.area === 'factory') continue;
         if (action.id === 'send-to-lab' && primary.area === 'lab') continue;
         if (action.id === 'send-to-yard' && primary.area === 'yard') continue;

@@ -433,27 +433,6 @@ ActionRegistry.register({
 });
 
 ActionRegistry.register({
-  id: 'recall-from-factory', label: 'Recall', icon: '📢', type: 'solo', cooldown: 0,
-  canPerform(m) {
-    if (m.area !== 'factory') return { ok: false, reason: 'Not in factory' };
-    return { ok: true, reason: '' };
-  },
-  perform(m) {
-    GameState.setMinionArea(m.id, 'yard');
-    // Track factory time for story
-    if (GameState.factoryLog[m.id]) {
-      const elapsed = Date.now() - GameState.factoryLog[m.id].enteredAt;
-      const flags = GameState.storyProgress.flags;
-      flags.maxFactoryTime = Math.max(flags.maxFactoryTime || 0, elapsed);
-    }
-    delete GameState.factoryLog[m.id];
-    GameState.emit('refresh-minions');
-    GameState.clearSelection();
-    return { success: true, message: `${m.name} recalled from factory!` };
-  },
-});
-
-ActionRegistry.register({
   id: 'send-to-lab', label: 'To Lab', icon: '🔬', type: 'solo', cooldown: 0,
   canPerform(m) {
     if (m.area === 'lab') return { ok: false, reason: 'Already in lab' };
