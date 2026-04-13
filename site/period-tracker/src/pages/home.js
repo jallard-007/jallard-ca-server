@@ -170,11 +170,40 @@ export function renderHome(app) {
     const detailPanel = document.getElementById('phase-detail-panel');
     let expandedPhaseIdx = null;
 
+    function showDetailPanel(idx, scroll = false) {
+        const p = PHASES[idx];
+        expandedPhaseIdx = idx;
+        detailPanel.classList.remove('hidden');
+        detailPanel.innerHTML = `
+            <div class="detail-header" style="background:${p.colorLight};border-left:4px solid ${p.color}">
+                <span class="detail-emoji">${p.emoji}</span>
+                <div>
+                    <div class="detail-name" style="color:${p.color}">${p.label} Phase</div>
+                    <div class="detail-days">Days ${getDayRange(idx)} · ${p.days} days</div>
+                </div>
+                <button class="detail-close" aria-label="Close">✕</button>
+            </div>
+            <p class="detail-description">${p.details}</p>
+            <ul class="self-care-list">
+                ${p.selfCare.map(tip => `<li class="self-care-item">
+                    <span class="self-care-dot" style="background:${p.color}"></span>
+                    <span>${tip}</span>
+                </li>`).join('')}
+            </ul>
+        `;
+        detailPanel.querySelector('.detail-close').addEventListener('click', () => {
+            expandedPhaseIdx = null;
+            detailPanel.classList.add('hidden');
+            detailPanel.innerHTML = '';
+        });
+        if (scroll) detailPanel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+
     svg.querySelectorAll('.phase-arc').forEach(arc => {
         const idx = parseInt(arc.dataset.phase, 10);
         const p = PHASES[idx];
 
-        arc.addEventListener('mouseenter', (e) => {
+        arc.addEventListener('mouseenter', () => {
             tooltip.innerHTML = `<strong style="color:${p.color}">${p.emoji} ${p.label}</strong><br>${p.summary}`;
             tooltip.classList.remove('hidden');
         });
@@ -195,31 +224,8 @@ export function renderHome(app) {
                 detailPanel.classList.add('hidden');
                 detailPanel.innerHTML = '';
             } else {
-                expandedPhaseIdx = idx;
                 tooltip.classList.add('hidden');
-                detailPanel.classList.remove('hidden');
-                detailPanel.innerHTML = `
-                    <div class="detail-header" style="background:${p.colorLight};border-left:4px solid ${p.color}">
-                        <span class="detail-emoji">${p.emoji}</span>
-                        <div>
-                            <div class="detail-name" style="color:${p.color}">${p.label} Phase</div>
-                            <div class="detail-days">Days ${getDayRange(idx)} · ${p.days} days</div>
-                        </div>
-                        <button class="detail-close" aria-label="Close">✕</button>
-                    </div>
-                    <p class="detail-description">${p.details}</p>
-                    <ul class="self-care-list">
-                        ${p.selfCare.map(tip => `<li class="self-care-item">
-                            <span class="self-care-dot" style="background:${p.color}"></span>
-                            <span>${tip}</span>
-                        </li>`).join('')}
-                    </ul>
-                `;
-                detailPanel.querySelector('.detail-close').addEventListener('click', () => {
-                    expandedPhaseIdx = null;
-                    detailPanel.classList.add('hidden');
-                    detailPanel.innerHTML = '';
-                });
+                showDetailPanel(idx);
             }
         });
     });
@@ -227,34 +233,7 @@ export function renderHome(app) {
     // Legend chip click
     app.querySelectorAll('.legend-chip').forEach(chip => {
         const idx = parseInt(chip.dataset.phase, 10);
-        const p = PHASES[idx];
-        chip.addEventListener('click', () => {
-            expandedPhaseIdx = idx;
-            detailPanel.classList.remove('hidden');
-            detailPanel.innerHTML = `
-                <div class="detail-header" style="background:${p.colorLight};border-left:4px solid ${p.color}">
-                    <span class="detail-emoji">${p.emoji}</span>
-                    <div>
-                        <div class="detail-name" style="color:${p.color}">${p.label} Phase</div>
-                        <div class="detail-days">Days ${getDayRange(idx)} · ${p.days} days</div>
-                    </div>
-                    <button class="detail-close" aria-label="Close">✕</button>
-                </div>
-                <p class="detail-description">${p.details}</p>
-                <ul class="self-care-list">
-                    ${p.selfCare.map(tip => `<li class="self-care-item">
-                        <span class="self-care-dot" style="background:${p.color}"></span>
-                        <span>${tip}</span>
-                    </li>`).join('')}
-                </ul>
-            `;
-            detailPanel.querySelector('.detail-close').addEventListener('click', () => {
-                expandedPhaseIdx = null;
-                detailPanel.classList.add('hidden');
-                detailPanel.innerHTML = '';
-            });
-            detailPanel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-        });
+        chip.addEventListener('click', () => showDetailPanel(idx, true));
     });
 }
 

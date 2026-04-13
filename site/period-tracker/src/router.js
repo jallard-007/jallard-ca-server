@@ -1,16 +1,15 @@
 import { getUser } from './state.js';
 
-const routes = {
-    login: null,
-    setup: null,
-    home: null,
-    profile: null,
-};
+const VALID_ROUTES = ['login', 'setup', 'home', 'profile'];
+
+const routes = new Map(VALID_ROUTES.map(r => [r, null]));
 
 let currentRoute = null;
 
 export function registerRoutes(handlers) {
-    Object.assign(routes, handlers);
+    for (const key of VALID_ROUTES) {
+        if (handlers[key]) routes.set(key, handlers[key]);
+    }
 }
 
 export function navigate(route) {
@@ -18,7 +17,8 @@ export function navigate(route) {
 }
 
 function resolve() {
-    const hash = window.location.hash.replace('#', '') || 'login';
+    const raw = window.location.hash.replace('#', '');
+    const hash = VALID_ROUTES.includes(raw) ? raw : 'login';
     const user = getUser();
 
     // Guard: no user → login
@@ -32,7 +32,7 @@ function resolve() {
         return;
     }
 
-    const handler = routes[hash];
+    const handler = routes.get(hash);
     if (handler && hash !== currentRoute) {
         currentRoute = hash;
         handler();
