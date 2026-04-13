@@ -166,9 +166,14 @@ function PhaseDetailPanel({ phaseIdx, onClose }) {
 
 export default function Home() {
     const user = getUser();
-    const cycleDay = getCycleDay(user?.birthday);
+    const cycleDay = user ? getCycleDay(user.birthday) : null;
 
     const [expandedPhaseIdx, setExpandedPhaseIdx] = useState(null);
+
+    if (!user) {
+        navigate('login');
+        return null;
+    }
 
     if (!cycleDay) {
         navigate('setup');

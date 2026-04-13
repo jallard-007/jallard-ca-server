@@ -30,10 +30,11 @@ export default function App() {
     const user = getUser();
     const route = resolveRoute(raw, user);
 
-    // Sync URL if guard redirected
+    // Sync URL if guard redirected — check live hash to avoid hashchange loop
     useEffect(() => {
-        if (route !== raw) window.location.hash = route;
-    }, [route, raw]);
+        const current = window.location.hash.replace('#', '');
+        if (route !== current) window.location.hash = route;
+    }, [route]);
 
     switch (route) {
         case 'login':   return <Login />;

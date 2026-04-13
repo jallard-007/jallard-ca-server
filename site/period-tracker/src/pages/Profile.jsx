@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { getUser, saveUser, clearUser } from '../state.js';
+import { getUser, saveUser, clearUser, getCycleDay, getPhaseForDay, PHASES } from '../state.js';
 import { navigate } from '../App.jsx';
 
 export default function Profile() {
@@ -29,8 +29,9 @@ export default function Profile() {
         setTimeout(() => setSuccess(false), 3000);
     }
 
-    // Get current phase color for avatar
-    const phaseColor = document.documentElement.style.getPropertyValue('--phase-color') || '#c0392b';
+    // Derive phase color from cycle state (works even if Home hasn't mounted)
+    const cycleDay = user ? getCycleDay(user.birthday) : null;
+    const phaseColor = cycleDay ? getPhaseForDay(cycleDay).phase.color : PHASES[0].color;
 
     return (
         <div className="min-h-dvh bg-gray-50">
