@@ -165,7 +165,7 @@ func realMain() int {
 
 	port := os.Getenv("JALLARD_PORT")
 	if port == "" {
-		port = "8027"
+		port = "8080"
 	}
 
 	mux := http.NewServeMux()
