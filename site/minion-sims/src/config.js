@@ -7,11 +7,10 @@ import { FactoryScene } from './scenes/FactoryScene.js';
 export const gameConfig = {
   type: Phaser.AUTO,
   parent: 'game-container',
-  width: 1024,
-  height: 768,
   scale: {
     mode: Phaser.Scale.RESIZE,
-    autoCenter: Phaser.Scale.CENTER_BOTH,
+    width: '100%',
+    height: '100%',
   },
   scene: [BootScene, YardScene, LabScene, FactoryScene],
   fps: {

@@ -1,34 +1,14 @@
-import * as Phaser from 'phaser';
-import { GameState } from '../systems/GameState.js';
-import { MinionAI } from '../systems/MinionAI.js';
-import { Minion } from '../objects/Minion.js';
+import { BaseAreaScene } from './BaseAreaScene.js';
 import { randFloat } from '../utils.js';
 
-export class LabScene extends Phaser.Scene {
+export class LabScene extends BaseAreaScene {
   constructor() {
     super({ key: 'LabScene' });
   }
 
-  create() {
-    GameState.activeScene = this;
-    GameState.currentArea = 'lab';
-    this.minionSprites = new Map();
-    MinionAI.resetTimers();
+  get areaKey() { return 'lab'; }
 
-    this._drawBackground();
-    this._spawnMinions();
-    this._setupInput();
-
-    this._unsubs = [
-      GameState.on('refresh-minions', () => this._refreshMinions()),
-      GameState.on('minion-added', () => this._refreshMinions()),
-      GameState.on('minion-deleted', () => this._refreshMinions()),
-    ];
-    GameState.emit('area-changed', 'lab');
-    this.events.once('shutdown', this.shutdown, this);
-  }
-
-  _drawBackground() {
+  drawBackground() {
     const w = this.scale.width;
     const h = this.scale.height;
 
@@ -68,56 +48,5 @@ export class LabScene extends Phaser.Scene {
       fontSize: '16px', color: '#B0B0D0', fontFamily: 'Arial, sans-serif',
       stroke: '#1a1a2e', strokeThickness: 3,
     }).setOrigin(0.5).setDepth(2);
-  }
-
-  _spawnMinions() {
-    const minions = GameState.getMinionsInArea('lab');
-    const w = this.scale.width;
-    const h = this.scale.height;
-
-    for (const mData of minions) {
-      if (this.minionSprites.has(mData.id)) continue;
-      const x = randFloat(80, w - 80);
-      const y = randFloat(h * 0.42, h - 80);
-      const sprite = new Minion(this, x, y, mData);
-      this.minionSprites.set(mData.id, sprite);
-    }
-  }
-
-  _refreshMinions() {
-    for (const [id, sprite] of this.minionSprites) {
-      const mData = GameState.getMinion(id);
-      if (!mData || mData.area !== 'lab') {
-        sprite.destroy();
-        this.minionSprites.delete(id);
-      }
-    }
-    this._spawnMinions();
-  }
-
-  _setupInput() {
-    this.input.on('pointerdown', (pointer, gameObjects) => {
-      if (gameObjects.length === 0) {
-        GameState.clearSelection();
-      }
-    });
-  }
-
-  update(time, delta) {
-    MinionAI.update(time, delta, this.minionSprites, this);
-
-    for (const [, sprite] of this.minionSprites) {
-      if (sprite.getData('tweening') || sprite._dragStarted) {
-        sprite.update();
-      }
-    }
-  }
-
-  shutdown() {
-    if (this._unsubs) this._unsubs.forEach(fn => fn());
-    for (const [, sprite] of this.minionSprites) {
-      this.tweens.killTweensOf(sprite);
-    }
-    this.minionSprites.clear();
   }
 }

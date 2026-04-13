@@ -1,6 +1,7 @@
 import * as Phaser from 'phaser';
-import { BODY_DIMS, WEIGHT_SCALE, MOOD_EMOJI, getMoodFromValue, CLOTHING_ITEMS } from '../utils.js';
+import { BODY_DIMS, WEIGHT_SCALE, MOOD_EMOJI, getMoodFromValue, CLOTHING_ITEMS, clamp, randFloat, pickRandom } from '../utils.js';
 import { GameState } from '../systems/GameState.js';
+import { drawBottom, drawTop, drawGloves, drawShoes } from './MinionClothing.js';
 
 export class Minion extends Phaser.GameObjects.Container {
   constructor(scene, x, y, minionData) {
@@ -24,9 +25,7 @@ export class Minion extends Phaser.GameObjects.Container {
       if (!this._dragStarted) {
         this._dragStarted = true;
         // Kill movement tweens when drag begins
-        scene.tweens.killTweensOf(this);
-        this.setData('tweening', false);
-        this.scaleX = 1; this.scaleY = 1; this.angle = 0;
+        this.stopAllMotion();
       }
       this.x = dragX;
       this.y = dragY;
@@ -36,41 +35,14 @@ export class Minion extends Phaser.GameObjects.Container {
       if (!this._dragStarted) {
         // Was a tap, not a drag
         GameState.selectMinion(this.minionId);
+      } else {
+        GameState.setMinionPos(this.minionId, this.x, this.y);
       }
       this._dragStarted = false;
     });
 
     // Enable drag on this scene's input
     scene.input.setDraggable(this);
-
-    // Subscribe to GameState events for reactive UI updates
-    this._unsubs = [
-      GameState.on('minion-mood-changed', ({ id, mood }) => {
-        if (id === this.minionId) this._updateMoodText(mood);
-      }),
-      GameState.on('minion-sleep-changed', ({ id, isSleeping }) => {
-        if (id === this.minionId) {
-          this._updateSleepText(isSleeping);
-          this._updateMoodVisible(GameState.settings.showMoodBubbles, isSleeping);
-        }
-      }),
-      GameState.on('selection-changed', () => {
-        const isSelected = GameState.selectedMinionId === this.minionId;
-        const isSecondary = GameState.secondMinionId === this.minionId;
-        this._updateSelectionRing(isSelected, isSecondary);
-      }),
-      GameState.on('setting-changed', ({ key, value }) => {
-        if (key === 'showMoodBubbles') {
-          const d = this.mData;
-          this._updateMoodVisible(value, d?.isSleeping);
-        } else if (key === 'showNameLabels') {
-          this._updateNameLabel(value);
-        }
-      }),
-      GameState.on('outfit-changed', ({ id }) => {
-        if (id === this.minionId) this.redraw();
-      }),
-    ];
   }
 
   get mData() {
@@ -151,216 +123,12 @@ export class Minion extends Phaser.GameObjects.Container {
 
     // --- Bottom clothing ---
     if (outfit.bottom && CLOTHING_ITEMS[outfit.bottom]) {
-      const bc = CLOTHING_ITEMS[outfit.bottom].color;
-      g.fillStyle(bc, 0.9);
-      g.fillRoundedRect(-dims.w / 2 + 1, 0, dims.w - 2, dims.h / 2, { tl: 0, tr: 0, bl: dims.w / 4, br: dims.w / 4 });
-      // Per-item detail
-      switch (outfit.bottom) {
-        case 'jeans':
-          g.lineStyle(1, 0x333366, 0.5);
-          g.lineBetween(0, 2, 0, dims.h / 2 - 4);
-          g.lineStyle(1, 0x333366, 0.3);
-          g.lineBetween(-dims.w / 4 + 2, dims.h / 6, -dims.w / 4 + 6, dims.h / 6);
-          g.lineBetween(-dims.w / 4 + 2, dims.h / 6, -dims.w / 4 + 2, dims.h / 6 + 5);
-          break;
-        case 'shorts':
-          g.lineStyle(1.5, 0x664422, 0.4);
-          g.lineBetween(-dims.w / 2 + 2, dims.h / 4, dims.w / 2 - 2, dims.h / 4);
-          g.lineBetween(0, 2, 0, dims.h / 4);
-          break;
-        case 'tutu':
-          for (let i = 0; i < 6; i++) {
-            const tx = -dims.w / 2 + 4 + i * (dims.w - 8) / 5;
-            g.fillStyle(0xFF88AA, 0.5);
-            g.fillTriangle(tx, dims.h / 4, tx + 5, dims.h / 2 + 2, tx - 5, dims.h / 2 + 2);
-          }
-          break;
-        case 'kilt':
-          g.lineStyle(1, 0x663311, 0.5);
-          for (let i = -dims.w / 2 + 5; i < dims.w / 2; i += 6) {
-            g.lineBetween(i, 2, i, dims.h / 2 - 4);
-          }
-          g.lineStyle(1, 0xAA6633, 0.4);
-          for (let j = 4; j < dims.h / 2; j += 6) {
-            g.lineBetween(-dims.w / 2 + 2, j, dims.w / 2 - 2, j);
-          }
-          break;
-        case 'maid-skirt':
-          // Black skirt with slight flare
-          g.fillStyle(0x222222, 0.9);
-          g.fillRoundedRect(-dims.w / 2 - 2, 0, dims.w + 4, dims.h / 2, { tl: 0, tr: 0, bl: dims.w / 3, br: dims.w / 3 });
-          // White apron over skirt
-          g.fillStyle(0xFFFFFF, 0.8);
-          g.fillRoundedRect(-dims.w / 3, 1, dims.w / 1.5, dims.h / 2 - 2, { tl: 0, tr: 0, bl: dims.w / 4, br: dims.w / 4 });
-          // Apron waist band
-          g.fillStyle(0xFFFFFF, 0.9);
-          g.fillRect(-dims.w / 2, -1, dims.w, 4);
-          // Apron bow at back (visible at waist sides)
-          g.fillStyle(0xFFFFFF, 0.7);
-          g.fillTriangle(-dims.w / 2 - 4, 0, -dims.w / 2, -3, -dims.w / 2, 3);
-          g.fillTriangle(dims.w / 2 + 4, 0, dims.w / 2, -3, dims.w / 2, 3);
-          // Lace trim at hem
-          for (let i = -dims.w / 2; i < dims.w / 2; i += 4) {
-            g.fillStyle(0xFFFFFF, 0.5);
-            g.fillCircle(i, dims.h / 2 - 1, 2);
-          }
-          break;
-      }
+      drawBottom(g, dims, outfit.bottom);
     }
 
     // --- Top clothing ---
     if (outfit.top && CLOTHING_ITEMS[outfit.top]) {
-      const c = CLOTHING_ITEMS[outfit.top].color;
-      g.fillStyle(c, 0.85);
-      const ty = -dims.h / 8;
-      g.fillRect(-dims.w / 2 + 2, ty, dims.w - 4, dims.h / 3.5);
-
-      switch (outfit.top) {
-        case 'overalls': {
-          // Clear generic top rect from face area
-          g.fillStyle(skinColor, 1);
-          g.fillRect(-dims.w / 2 + 2, ty, dims.w - 4, dims.h / 3.5);
-          // Bib below mouth
-          const bibY = -dims.h / 4 + 21; // below mouthY
-          const bibH = dims.h / 2 - bibY;
-          g.fillStyle(c, 0.85);
-          g.fillRect(-dims.w / 3, bibY, dims.w / 1.5, bibH);
-          // Straps over shoulders (angled outward)
-          g.fillStyle(c, 1);
-          const strapTop = -dims.h / 10;
-          // Left strap
-          g.beginPath();
-          g.moveTo(-dims.w / 3 + 2, bibY);
-          g.lineTo(-dims.w / 3 + 6, bibY);
-          g.lineTo(-dims.w / 2 + 1, strapTop);
-          g.lineTo(-dims.w / 2 - 2, strapTop);
-          g.closePath();
-          g.fillPath();
-          // Right strap
-          g.beginPath();
-          g.moveTo(dims.w / 3 - 6, bibY);
-          g.lineTo(dims.w / 3 - 2, bibY);
-          g.lineTo(dims.w / 2 + 2, strapTop);
-          g.lineTo(dims.w / 2 - 1, strapTop);
-          g.closePath();
-          g.fillPath();
-          // Buttons where straps meet bib
-          g.fillStyle(0xFFFFFF, 0.9);
-          g.fillCircle(-dims.w / 4 + 2, bibY + 2, 2.5);
-          g.fillCircle(dims.w / 4 - 2, bibY + 2, 2.5);
-          // Front pocket
-          g.lineStyle(1, 0x3050A0, 0.6);
-          g.strokeRect(-5, bibY + 5, 10, 7);
-          break;
-        }
-        case 'hawaiian-shirt':
-          // Floral dots
-          const flowers = [[0.25, 0.3], [0.6, 0.5], [0.4, 0.7], [0.75, 0.25], [0.15, 0.65]];
-          for (const [fx, fy] of flowers) {
-            const px = -dims.w / 2 + 3 + fx * (dims.w - 6);
-            const py = ty + fy * (dims.h / 3.5);
-            g.fillStyle(0xFFFF66, 0.7);
-            g.fillCircle(px, py, 2);
-            g.fillStyle(0xFFFFFF, 0.5);
-            g.fillCircle(px - 1.5, py - 1, 1);
-            g.fillCircle(px + 1.5, py - 1, 1);
-          }
-          // Open collar V
-          g.lineStyle(1.5, 0xCC4030, 0.5);
-          g.lineBetween(-3, ty, 0, ty + 6);
-          g.lineBetween(3, ty, 0, ty + 6);
-          break;
-        case 'tuxedo-jacket':
-          // Lapels
-          g.fillStyle(0x222222, 0.9);
-          g.fillTriangle(-dims.w / 2 + 3, ty, -2, ty, -dims.w / 4, ty + dims.h / 7);
-          g.fillTriangle(dims.w / 2 - 3, ty, 2, ty, dims.w / 4, ty + dims.h / 7);
-          // Center line
-          g.lineStyle(1, 0x333333, 0.6);
-          g.lineBetween(0, ty, 0, ty + dims.h / 3.5);
-          // Buttons
-          g.fillStyle(0xFFD700, 1);
-          g.fillCircle(0, ty + dims.h / 7, 1.5);
-          g.fillCircle(0, ty + dims.h / 5, 1.5);
-          break;
-        case 'gru-logo-tee':
-          // "G" logo
-          g.lineStyle(2, 0xFFD93D, 0.8);
-          g.beginPath();
-          g.arc(0, ty + dims.h / 7, 5, 0.3, Math.PI * 2 - 0.3, false);
-          g.strokePath();
-          g.lineBetween(3, ty + dims.h / 7, 0, ty + dims.h / 7);
-          break;
-        case 'maid-top':
-          // White peter-pan collar
-          g.fillStyle(0xFFFFFF, 0.9);
-          g.fillEllipse(-dims.w / 5, ty + 2, dims.w / 3, 6);
-          g.fillEllipse(dims.w / 5, ty + 2, dims.w / 3, 6);
-          // Frilly collar trim
-          for (let i = -4; i <= 4; i++) {
-            g.fillStyle(0xFFFFFF, 0.7);
-            g.fillCircle(i * 2.5, ty + 5, 2);
-          }
-          // Center ribbon bow
-          g.fillStyle(0xFF69B4, 1);
-          g.fillTriangle(-6, ty + 5, 0, ty + 2, 0, ty + 8);
-          g.fillTriangle(6, ty + 5, 0, ty + 2, 0, ty + 8);
-          g.fillCircle(0, ty + 5, 2);
-          // White apron bib
-          g.fillStyle(0xFFFFFF, 0.85);
-          g.fillRoundedRect(-dims.w / 4, ty + 8, dims.w / 2, dims.h / 4.5, 3);
-          // Apron lace trim on bib
-          g.lineStyle(1, 0xDDDDDD, 0.5);
-          for (let i = -dims.w / 4 + 2; i < dims.w / 4; i += 4) {
-            g.fillStyle(0xFFFFFF, 0.4);
-            g.fillCircle(i, ty + 8 + dims.h / 4.5, 1.5);
-          }
-          // Puffed sleeve details
-          g.fillStyle(0xFFFFFF, 0.3);
-          g.fillEllipse(-dims.w / 2 + 4, ty + 3, 8, 6);
-          g.fillEllipse(dims.w / 2 - 4, ty + 3, 8, 6);
-          break;
-        case 'striped-shirt':
-          // Horizontal stripes
-          g.lineStyle(2, 0x225522, 0.5);
-          for (let sy = ty + 3; sy < ty + dims.h / 3.5; sy += 5) {
-            g.lineBetween(-dims.w / 2 + 3, sy, dims.w / 2 - 3, sy);
-          }
-          break;
-        case 'lab-coat':
-          // Collar
-          g.fillStyle(0xDDDDDD, 1);
-          g.fillTriangle(-dims.w / 4, ty - 2, 0, ty + 5, -2, ty);
-          g.fillTriangle(dims.w / 4, ty - 2, 0, ty + 5, 2, ty);
-          // Pocket
-          g.lineStyle(1, 0xBBBBBB, 0.7);
-          g.strokeRect(-dims.w / 3, ty + 6, 7, 5);
-          // Pen detail
-          g.fillStyle(0x3366CC, 1);
-          g.fillRect(-dims.w / 3 + 2, ty + 4, 1.5, 4);
-          break;
-        case 'spy-suit-top':
-          // Belt
-          g.fillStyle(0x444444, 1);
-          g.fillRect(-dims.w / 2 + 2, ty + dims.h / 4.5, dims.w - 4, 3);
-          // Buckle
-          g.fillStyle(0xCCCCCC, 1);
-          g.fillRect(-2, ty + dims.h / 4.5 - 0.5, 4, 4);
-          // Collar
-          g.fillStyle(0x2a2a2a, 1);
-          g.fillTriangle(-4, ty, 0, ty + 4, 4, ty);
-          break;
-        case 'vector-top':
-          // "V" stripe
-          g.lineStyle(2.5, 0xFFFFFF, 0.7);
-          g.lineBetween(-dims.w / 3, ty + 2, 0, ty + dims.h / 5);
-          g.lineBetween(dims.w / 3, ty + 2, 0, ty + dims.h / 5);
-          // Side stripes
-          g.lineStyle(1, 0xFF8800, 0.4);
-          g.lineBetween(-dims.w / 2 + 3, ty, -dims.w / 2 + 3, ty + dims.h / 3.5);
-          g.lineBetween(dims.w / 2 - 3, ty, dims.w / 2 - 3, ty + dims.h / 3.5);
-          break;
-      }
+      drawTop(g, dims, outfit.top, skinColor);
     }
 
     // --- Arms ---
@@ -369,44 +137,7 @@ export class Minion extends Phaser.GameObjects.Container {
     g.lineBetween(dims.w / 2, 0, dims.w / 2 + 7, 8);
 
     // --- Gloves ---
-    if (outfit.gloves && CLOTHING_ITEMS[outfit.gloves]) {
-      const gc = CLOTHING_ITEMS[outfit.gloves].color;
-      g.fillStyle(gc, 1);
-      switch (outfit.gloves) {
-        case 'boxing-gloves':
-          g.fillCircle(-dims.w / 2 - 7, 10, 6);
-          g.fillCircle(dims.w / 2 + 7, 10, 6);
-          g.lineStyle(1, 0x880000, 0.5);
-          g.strokeCircle(-dims.w / 2 - 7, 10, 6);
-          g.strokeCircle(dims.w / 2 + 7, 10, 6);
-          g.fillStyle(0xFFFFFF, 0.6);
-          g.fillRect(-dims.w / 2 - 9, 6, 4, 2);
-          g.fillRect(dims.w / 2 + 5, 6, 4, 2);
-          break;
-        case 'oven-mitts':
-          g.fillRoundedRect(-dims.w / 2 - 11, 5, 9, 12, 3);
-          g.fillRoundedRect(dims.w / 2 + 2, 5, 9, 12, 3);
-          g.lineStyle(1, 0xCC5500, 0.4);
-          g.lineBetween(-dims.w / 2 - 9, 7, -dims.w / 2 - 4, 7);
-          g.lineBetween(dims.w / 2 + 4, 7, dims.w / 2 + 9, 7);
-          break;
-        case 'rubber-gloves':
-          g.fillCircle(-dims.w / 2 - 7, 10, 4.5);
-          g.fillCircle(dims.w / 2 + 7, 10, 4.5);
-          // Cuff
-          g.fillStyle(gc, 0.6);
-          g.fillRect(-dims.w / 2 - 9, 3, 5, 3);
-          g.fillRect(dims.w / 2 + 4, 3, 5, 3);
-          break;
-        default:
-          g.fillCircle(-dims.w / 2 - 7, 10, 4);
-          g.fillCircle(dims.w / 2 + 7, 10, 4);
-      }
-    } else {
-      g.fillStyle(skinColor, 1);
-      g.fillCircle(-dims.w / 2 - 7, 10, 3);
-      g.fillCircle(dims.w / 2 + 7, 10, 3);
-    }
+    drawGloves(g, dims, outfit.gloves, skinColor);
 
     // --- Goggles band ---
     const goggleY = -dims.h / 4;
@@ -495,81 +226,7 @@ export class Minion extends Phaser.GameObjects.Container {
     }
 
     // --- Shoes ---
-    if (outfit.shoes && CLOTHING_ITEMS[outfit.shoes]) {
-      const sc = CLOTHING_ITEMS[outfit.shoes].color;
-      g.fillStyle(sc, 1);
-      switch (outfit.shoes) {
-        case 'boots':
-          g.fillRoundedRect(-14, dims.h / 2 - 2, 12, 8, 2);
-          g.fillRoundedRect(2, dims.h / 2 - 2, 12, 8, 2);
-          g.lineStyle(1, 0x663311, 0.5);
-          g.lineBetween(-12, dims.h / 2, -4, dims.h / 2);
-          g.lineBetween(4, dims.h / 2, 12, dims.h / 2);
-          break;
-        case 'sneakers':
-          g.fillEllipse(-7, dims.h / 2 + 3, 15, 7);
-          g.fillEllipse(7, dims.h / 2 + 3, 15, 7);
-          // Stripe
-          g.lineStyle(1.5, 0xCCCCCC, 0.5);
-          g.lineBetween(-12, dims.h / 2 + 3, -3, dims.h / 2 + 1);
-          g.lineBetween(2, dims.h / 2 + 3, 11, dims.h / 2 + 1);
-          // Laces
-          g.fillStyle(0xCCCCCC, 0.8);
-          g.fillCircle(-7, dims.h / 2 + 1, 1);
-          g.fillCircle(7, dims.h / 2 + 1, 1);
-          break;
-        case 'clown-shoes':
-          g.fillEllipse(-7, dims.h / 2 + 3, 20, 8);
-          g.fillEllipse(7, dims.h / 2 + 3, 20, 8);
-          // Toe balls
-          g.fillStyle(0xFFFF00, 1);
-          g.fillCircle(-16, dims.h / 2 + 2, 3);
-          g.fillCircle(16, dims.h / 2 + 2, 3);
-          break;
-        case 'flip-flops':
-          g.fillEllipse(-7, dims.h / 2 + 3, 12, 6);
-          g.fillEllipse(7, dims.h / 2 + 3, 12, 6);
-          // Straps
-          g.lineStyle(1.5, 0x0088CC, 0.7);
-          g.lineBetween(-9, dims.h / 2, -7, dims.h / 2 + 3);
-          g.lineBetween(-5, dims.h / 2, -7, dims.h / 2 + 3);
-          g.lineBetween(5, dims.h / 2, 7, dims.h / 2 + 3);
-          g.lineBetween(9, dims.h / 2, 7, dims.h / 2 + 3);
-          break;
-        case 'fancy-shoes':
-          g.fillEllipse(-7, dims.h / 2 + 3, 14, 6);
-          g.fillEllipse(7, dims.h / 2 + 3, 14, 6);
-          // Buckle
-          g.fillStyle(0xFFD700, 1);
-          g.fillRect(-9, dims.h / 2 + 1, 3, 3);
-          g.fillRect(6, dims.h / 2 + 1, 3, 3);
-          break;
-        case 'maid-shoes':
-          // Mary Jane style shoes
-          g.fillEllipse(-7, dims.h / 2 + 3, 13, 6);
-          g.fillEllipse(7, dims.h / 2 + 3, 13, 6);
-          // Strap across top
-          g.lineStyle(1.5, 0x222222, 0.8);
-          g.lineBetween(-11, dims.h / 2 + 1, -3, dims.h / 2 + 1);
-          g.lineBetween(3, dims.h / 2 + 1, 11, dims.h / 2 + 1);
-          // Small buckle/button
-          g.fillStyle(0xFFFFFF, 0.9);
-          g.fillCircle(-6, dims.h / 2 + 1, 1.5);
-          g.fillCircle(6, dims.h / 2 + 1, 1.5);
-          // White knee-high socks
-          g.fillStyle(0xFFFFFF, 0.7);
-          g.fillRect(-10, dims.h / 2 - 5, 6, 7);
-          g.fillRect(4, dims.h / 2 - 5, 6, 7);
-          break;
-        default:
-          g.fillEllipse(-7, dims.h / 2 + 3, 14, 7);
-          g.fillEllipse(7, dims.h / 2 + 3, 14, 7);
-      }
-    } else {
-      g.fillStyle(0x222222, 1);
-      g.fillEllipse(-7, dims.h / 2 + 2, 10, 5);
-      g.fillEllipse(7, dims.h / 2 + 2, 10, 5);
-    }
+    drawShoes(g, dims, outfit.shoes);
 
     // --- Accessory ---
     if (outfit.accessory && CLOTHING_ITEMS[outfit.accessory]) {
@@ -843,8 +500,202 @@ export class Minion extends Phaser.GameObjects.Container {
     this.setDepth(depthY + 10);
   }
 
+  /** Walk to target position with natural-looking curved path */
+  walkTo(targetX, targetY) {
+    if (!this.scene || this.mData?.isSleeping) return;
+    this.stopAllMotion();
+
+    const dist = Math.hypot(targetX - this.x, targetY - this.y);
+    const speed = randFloat(40, 60);
+    const totalDuration = Math.max(800, (dist / speed) * 1000);
+
+    this.setData('tweening', true);
+
+    // Walking bob animation
+    this._bobTween = this.scene.tweens.add({
+      targets: this,
+      scaleY: { from: 1, to: 0.95 },
+      scaleX: { from: 1, to: 1.03 },
+      yoyo: true,
+      repeat: Math.max(1, Math.floor(totalDuration / 300)),
+      duration: 150,
+    });
+
+    // Lean in initial direction
+    const dir = targetX > this.x ? 1 : -1;
+    this.scene.tweens.add({
+      targets: this,
+      angle: dir * 3,
+      duration: 300,
+      ease: 'Sine.easeOut',
+    });
+
+    const waypoints = this._buildWaypoints(targetX, targetY);
+    this._tweenAlongPath(waypoints, totalDuration);
+  }
+
+  _buildWaypoints(tx, ty) {
+    const sx = this.x, sy = this.y;
+    const w = this.scene.scale.width;
+    const h = this.scene.scale.height;
+    const margin = 60;
+    const minY = h * 0.42;
+    const maxY = h - 80;
+
+    const numStops = Math.random() < 0.4 ? 3 : 2;
+    const points = [];
+    for (let i = 1; i <= numStops; i++) {
+      const t = i / (numStops + 1);
+      const baseX = sx + (tx - sx) * t;
+      const baseY = sy + (ty - sy) * t;
+      const perpSign = (i % 2 === 0) ? 1 : -1;
+      const offsetMag = randFloat(20, 60) * perpSign;
+      const dx = tx - sx, dy = ty - sy;
+      const len = Math.hypot(dx, dy) || 1;
+      const px = -dy / len * offsetMag;
+      const py = dx / len * offsetMag;
+      points.push({
+        x: clamp(baseX + px, margin, w - margin),
+        y: clamp(baseY + py, minY, maxY),
+      });
+    }
+    points.push({ x: tx, y: ty });
+    return points;
+  }
+
+  _tweenAlongPath(waypoints, totalDuration) {
+    const segDuration = totalDuration / waypoints.length;
+    let idx = 0;
+    const eases = ['Sine.easeInOut', 'Quad.easeInOut', 'Cubic.easeOut'];
+
+    const nextSegment = () => {
+      if (idx >= waypoints.length || !this.scene) {
+        this._finishWalk();
+        return;
+      }
+      const wp = waypoints[idx];
+      const dir = wp.x > this.x ? 1 : -1;
+      this.scene.tweens.add({ targets: this, angle: dir * 3, duration: 200, ease: 'Sine.easeOut' });
+      this.scene.tweens.add({
+        targets: this,
+        x: wp.x,
+        y: wp.y,
+        duration: segDuration,
+        ease: pickRandom(eases),
+        onComplete: () => { idx++; nextSegment(); },
+      });
+    };
+    nextSegment();
+  }
+
+  _finishWalk() {
+    this.setData('tweening', false);
+    this._bobTween = null;
+    GameState.setMinionPos(this.minionId, this.x, this.y);
+    if (this.scene) {
+      this.scene.tweens.add({
+        targets: this,
+        scaleX: 1, scaleY: 1, angle: 0,
+        duration: 200,
+        ease: 'Sine.easeOut',
+      });
+    }
+  }
+
+  /** Play a one-shot reaction animation (tickle wiggle, dance bounce, etc.) */
+  playReaction(config) {
+    if (!this.scene || this.mData?.isSleeping) return;
+    this.scene.tweens.add({ targets: this, ...config });
+  }
+
+  /** Start looping work animation (factory) */
+  startWorkAnim() {
+    if (!this.scene || this.getData('workAnim')) return;
+    if (this.mData?.isSleeping) return;
+    this.setData('workAnim', true);
+    this.scene.tweens.add({
+      targets: this,
+      scaleY: { from: 1, to: 0.92 },
+      scaleX: { from: 1, to: 1.04 },
+      angle: { from: -2, to: 2 },
+      yoyo: true,
+      repeat: -1,
+      duration: 400,
+      ease: 'Sine.easeInOut',
+    });
+  }
+
+  /** Spawn a sweat particle if working (not sleeping). Returns true if emitted. */
+  trySweat() {
+    if (!this.scene || this.mData?.isSleeping) return false;
+    const sweat = this.scene.add.text(this.x + 10, this.y - 25, '💦', { fontSize: '12px' })
+      .setOrigin(0.5).setDepth(999);
+    this.scene.tweens.add({
+      targets: sweat, y: this.y - 50, alpha: 0,
+      duration: 800,
+      onComplete: () => sweat.destroy(),
+    });
+    return true;
+  }
+
+  /** Show a speech bubble that drifts up and fades, attached to this container */
+  showDialogue(text) {
+    if (!this.scene || this._dialogueBubble || this.mData?.isSleeping) return;
+    const baseY = -this.height / 2 - 20;
+    let bubble = this._dialogueBubble;
+    if (!bubble) {
+      bubble = this.scene.make.text({
+        x: 0, y: baseY,
+        text,
+        style: {
+          fontSize: '13px',
+          fontFamily: 'monospace',
+          backgroundColor: '#ffffffdd',
+          color: '#333',
+          padding: { x: 6, y: 3 },
+        },
+        add: false,
+      }).setOrigin(0.5).setDepth(1000).setScale(0.5);
+      this.add(bubble);
+    } else {
+      bubble.setPosition(0, baseY).setText(text).setAlpha(1).setVisible(true).setScale(0.5);
+    }
+    this._dialogueBubble = bubble;
+
+    // Pop-in
+    this.scene.tweens.add({
+      targets: bubble,
+      scale: 1,
+      duration: 200,
+      ease: 'Back.easeOut',
+    });
+
+    // Drift up + fade
+    this.scene.tweens.add({
+      targets: bubble,
+      y: baseY - 28,
+      alpha: 0,
+      delay: 2200,
+      duration: 600,
+      ease: 'Sine.easeIn',
+      onComplete: () => {
+        bubble.setVisible(false);
+        this._dialogueBubble = null;
+      },
+    });
+  }
+
+  /** Stop all tweens and reset visual state */
+  stopAllMotion() {
+    if (!this.scene) return;
+    this.scene.tweens.killTweensOf(this);
+    this.setData('tweening', false);
+    this.setData('workAnim', false);
+    this.scaleX = 1; this.scaleY = 1; this.angle = 0;
+    this._bobTween = null;
+  }
+
   destroy() {
-    if (this._unsubs) this._unsubs.forEach(fn => fn());
     const texKey = `_mb_${this.minionId}`;
     // Destroy RT first (releases GL framebuffer), then remove the
     // texture-manager entry so nothing references the dead resources.

@@ -85,6 +85,26 @@ function setCooldown(minion, actionId, ms) {
 
 const actions = [];
 
+/** Check if a minion is able to participate in any interaction */
+function canInteract(minion) {
+  if (!minion) return { ok: false, reason: 'No minion' };
+  if (minion.isSleeping) return { ok: false, reason: `${minion.name} is sleeping` };
+  return { ok: true, reason: '' };
+}
+
+/** Full eligibility check: interaction guard + action-specific canPerform */
+function checkAction(action, primary, secondary) {
+  if (action.id !== 'wake-up') {
+    const pi = canInteract(primary);
+    if (!pi.ok) return pi;
+    if (secondary) {
+      const si = canInteract(secondary);
+      if (!si.ok) return si;
+    }
+  }
+  return action.canPerform(primary, secondary, GameState);
+}
+
 export const ActionRegistry = {
   register(action) { actions.push(action); },
   getAll() { return [...actions]; },
@@ -96,6 +116,8 @@ export const ActionRegistry = {
   getPairActions() {
     return actions.filter(a => a.type === 'pair' && GameState.unlockedActions.has(a.id));
   },
+  canInteract,
+  checkAction,
 };
 
 /* ═══════════════ PAIR ACTIONS ═══════════════ */
@@ -261,9 +283,7 @@ ActionRegistry.register({
     if (scene) {
       for (const id of [a.id, b.id]) {
         const spr = scene.minionSprites?.get(id);
-        if (spr) {
-          scene.tweens.add({ targets: spr, scaleY: 1.1, yoyo: true, repeat: 3, duration: 200 });
-        }
+        if (spr) spr.playReaction({ scaleY: 1.1, yoyo: true, repeat: 3, duration: 200 });
       }
     }
     return { success: true, message: `${a.name} and ${b.name} danced!` };
@@ -367,11 +387,24 @@ ActionRegistry.register({
   },
   perform(m, _, scene) {
     GameState.setMinionSleeping(m.id, true);
-    const speed = GameState.settings.gameSpeed;
-    setTimeout(() => { GameState.setMinionSleeping(m.id, false); GameState.setMinionEnergy(m.id, 100); }, 30000 / speed);
     const pos = getSpritePos(scene, m.id);
     if (pos) { floatText(scene, pos.x, pos.y - 30, '💤'); }
     return { success: true, message: `${m.name} is napping...` };
+  },
+});
+
+ActionRegistry.register({
+  id: 'wake-up', label: 'Wake Up', icon: '⏰', type: 'solo', cooldown: 3000,
+  canPerform(m) {
+    if (!m.isSleeping) return { ok: false, reason: 'Not sleeping' };
+    if (m.energy < 50) return { ok: false, reason: 'Energy must be ≥ 50' };
+    return { ok: true, reason: '' };
+  },
+  perform(m, _, scene) {
+    GameState.setMinionSleeping(m.id, false);
+    const pos = getSpritePos(scene, m.id);
+    if (pos) { floatText(scene, pos.x, pos.y - 30, '☀️ Awake!'); }
+    return { success: true, message: `${m.name} woke up!` };
   },
 });
 
@@ -489,7 +522,7 @@ ActionRegistry.register({
     if (pos) { floatText(scene, pos.x, pos.y - 30, '😂'); }
     if (scene) {
       const spr = scene.minionSprites?.get(m.id);
-      if (spr) scene.tweens.add({ targets: spr, angle: 5, yoyo: true, repeat: 3, duration: 80 });
+      if (spr) spr.playReaction({ angle: 5, yoyo: true, repeat: 3, duration: 80 });
     }
     return { success: true, message: `Tickled ${m.name}!` };
   },
@@ -524,7 +557,7 @@ ActionRegistry.register({
       GameState.setMinionMood(n.id, n.moodValue + 15);
       if (scene) {
         const spr = scene.minionSprites?.get(n.id);
-        if (spr) scene.tweens.add({ targets: spr, scaleY: 1.15, yoyo: true, repeat: 5, duration: 200 });
+        if (spr) spr.playReaction({ scaleY: 1.15, yoyo: true, repeat: 5, duration: 200 });
       }
     }
     GameState.storyProgress.flags.groupDancePerformed = true;

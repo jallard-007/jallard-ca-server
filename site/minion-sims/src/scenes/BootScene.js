@@ -18,24 +18,6 @@ export class BootScene extends Phaser.Scene {
     super({ key: 'BootScene' });
   }
 
-  preload() {
-    // Show a simple loading bar
-    const w = this.scale.width;
-    const h = this.scale.height;
-    const bar = this.add.graphics();
-    const text = this.add.text(w / 2, h / 2 - 30, 'Loading Minion Sims...', {
-      fontSize: '24px', color: '#FFD93D', fontFamily: 'Arial',
-    }).setOrigin(0.5);
-
-    this.load.on('progress', (v) => {
-      bar.clear();
-      bar.fillStyle(0x333333, 1);
-      bar.fillRect(w / 4, h / 2, w / 2, 20);
-      bar.fillStyle(0xFFD93D, 1);
-      bar.fillRect(w / 4, h / 2, (w / 2) * v, 20);
-    });
-  }
-
   create() {
     // Initialize audio
     AudioManager.init();

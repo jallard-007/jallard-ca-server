@@ -1,35 +1,14 @@
-import * as Phaser from 'phaser';
-import { GameState } from '../systems/GameState.js';
-import { MinionAI } from '../systems/MinionAI.js';
-import { Minion } from '../objects/Minion.js';
+import { BaseAreaScene } from './BaseAreaScene.js';
 import { randFloat } from '../utils.js';
 
-export class YardScene extends Phaser.Scene {
+export class YardScene extends BaseAreaScene {
   constructor() {
     super({ key: 'YardScene' });
   }
 
-  create() {
-    GameState.activeScene = this;
-    GameState.currentArea = 'yard';
-    this.minionSprites = new Map();
-    MinionAI.resetTimers();
+  get areaKey() { return 'yard'; }
 
-    this._drawBackground();
-    this._spawnMinions();
-    this._setupInput();
-
-    // Listen for changes
-    this._unsubs = [
-      GameState.on('refresh-minions', () => this._refreshMinions()),
-      GameState.on('minion-added', () => this._refreshMinions()),
-      GameState.on('minion-deleted', () => this._refreshMinions()),
-    ];
-    GameState.emit('area-changed', 'yard');
-    this.events.once('shutdown', this.shutdown, this);
-  }
-
-  _drawBackground() {
+  drawBackground() {
     const w = this.scale.width;
     const h = this.scale.height;
 
@@ -44,11 +23,10 @@ export class YardScene extends Phaser.Scene {
     this.add.text(w - 70, 25, '☀️', { fontSize: '40px' }).setDepth(0);
 
     // Clouds
-    this._cloudSprites = [];
-    const clouds = ['☁️'];
+    this._bgTweenTargets = [];
     [[w * 0.08, 30, '38px'], [w * 0.35, 50, '28px'], [w * 0.62, 18, '44px'], [w * 0.82, 55, '22px']].forEach(([x, y, size]) => {
       const c = this.add.text(x, y, '☁️', { fontSize: size }).setDepth(0);
-      this._cloudSprites.push(c);
+      this._bgTweenTargets.push(c);
       this.tweens.add({ targets: c, x: x + 30, yoyo: true, repeat: -1, duration: 8000 + Math.random() * 4000, ease: 'Sine.easeInOut' });
     });
 
@@ -76,63 +54,5 @@ export class YardScene extends Phaser.Scene {
       fontSize: '16px', color: '#fff', fontFamily: 'Arial, sans-serif',
       stroke: '#2E7D32', strokeThickness: 3,
     }).setOrigin(0.5).setDepth(2);
-  }
-
-  _spawnMinions() {
-    const minions = GameState.getMinionsInArea('yard');
-    const w = this.scale.width;
-    const h = this.scale.height;
-
-    for (const mData of minions) {
-      if (this.minionSprites.has(mData.id)) continue;
-      const x = randFloat(80, w - 80);
-      const y = randFloat(h * 0.42, h - 80);
-      const sprite = new Minion(this, x, y, mData);
-      this.minionSprites.set(mData.id, sprite);
-    }
-  }
-
-  _refreshMinions() {
-    // Remove departed
-    for (const [id, sprite] of this.minionSprites) {
-      const mData = GameState.getMinion(id);
-      if (!mData || mData.area !== 'yard') {
-        sprite.destroy();
-        this.minionSprites.delete(id);
-      }
-    }
-    // Add newcomers
-    this._spawnMinions();
-  }
-
-  _setupInput() {
-    this.input.on('pointerdown', (pointer, gameObjects) => {
-      if (gameObjects.length === 0) {
-        GameState.clearSelection();
-      }
-    });
-  }
-
-  update(time, delta) {
-    MinionAI.update(time, delta, this.minionSprites, this);
-
-    // Only update minions that are actively moving
-    for (const [, sprite] of this.minionSprites) {
-      if (sprite.getData('tweening') || sprite._dragStarted) {
-        sprite.update();
-      }
-    }
-  }
-
-  shutdown() {
-    if (this._unsubs) this._unsubs.forEach(fn => fn());
-    // Kill infinite cloud tweens to prevent accumulation
-    if (this._cloudSprites) {
-      for (const c of this._cloudSprites) this.tweens.killTweensOf(c);
-    }
-    for (const [, sprite] of this.minionSprites) {
-      this.tweens.killTweensOf(sprite);
-    }
-    this.minionSprites.clear();
   }
 }

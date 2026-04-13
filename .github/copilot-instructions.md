@@ -7,6 +7,8 @@ current sites:
 - bunny-garden
 - minion-sims
 
+node_modules are available within ./node_modules at the root of the repository, not within each site directory.
+
 ---
 
 ## Caveman mode

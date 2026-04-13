@@ -15,13 +15,27 @@ class ActionBarClass {
     this.el.innerHTML = '<div class="action-bar-inner"></div>';
     document.body.appendChild(this.el);
 
-    // Prevent clicks on the action bar from propagating to the game canvas
-    this.el.addEventListener('pointerdown', (e) => {
-      e.stopPropagation();
-    });
+    // Prevent clicks on the action bar from reaching Phaser's input system.
+    // Phaser listens for mousedown/touchstart on window and checks defaultPrevented.
+    // stopPropagation on pointerdown alone doesn't block the separate mousedown event.
+    for (const evtType of ['pointerdown', 'mousedown', 'touchstart']) {
+      this.el.addEventListener(evtType, (e) => {
+        e.stopPropagation();
+        e.preventDefault();
+      });
+    }
 
     GameState.on('selection-changed', () => this.refresh());
+    GameState.on('minion-energy-changed', ({ id }) => this._refreshIfSelected(id));
+    GameState.on('minion-sleep-changed', ({ id }) => this._refreshIfSelected(id));
+    GameState.on('minion-hunger-changed', ({ id }) => this._refreshIfSelected(id));
     this.refresh();
+  }
+
+  _refreshIfSelected(id) {
+    if (id === GameState.selectedMinionId || id === GameState.secondMinionId) {
+      this.refresh();
+    }
   }
 
   refresh() {
@@ -74,14 +88,9 @@ class ActionBarClass {
     pinBtn.title = 'Toggle: stop minion from wandering';
     pinBtn.addEventListener('click', () => {
       GameState.setMinionPinned(primary.id, !primary.pinned);
-      // Stop any current movement tween
       if (primary.pinned && GameState.activeScene?.minionSprites) {
         const spr = GameState.activeScene.minionSprites.get(primary.id);
-        if (spr) {
-          GameState.activeScene.tweens.killTweensOf(spr);
-          spr.setData('tweening', false);
-          spr.scaleX = 1; spr.scaleY = 1; spr.angle = 0;
-        }
+        if (spr) spr.stopAllMotion();
       }
       this.refresh();
     });
@@ -113,6 +122,8 @@ class ActionBarClass {
         if (action.id === 'send-to-factory' && primary.area === 'factory') continue;
         if (action.id === 'send-to-lab' && primary.area === 'lab') continue;
         if (action.id === 'send-to-yard' && primary.area === 'yard') continue;
+        if (action.id === 'nap' && primary.isSleeping) continue;
+        if (action.id === 'wake-up' && !primary.isSleeping) continue;
         btns.appendChild(this._createBtn(action, primary, null));
       }
     }
@@ -134,7 +145,7 @@ class ActionBarClass {
     btn.className = 'action-btn';
 
     const target = secondary || null;
-    const check = action.canPerform(primary, target, GameState);
+    const check = ActionRegistry.checkAction(action, primary, secondary);
 
     btn.innerHTML = `${action.icon} ${action.label}`;
 
@@ -159,9 +170,8 @@ class ActionBarClass {
             const my = (sprA.y + sprB.y) / 2;
             const gap = 30;
             const duration = Math.min(600, Math.hypot(sprA.x - sprB.x, sprA.y - sprB.y) * 3);
-            // Stop any existing movement tweens
-            scene.tweens.killTweensOf(sprA);
-            scene.tweens.killTweensOf(sprB);
+            sprA.stopAllMotion();
+            sprB.stopAllMotion();
             sprA.setData('tweening', true);
             sprB.setData('tweening', true);
             // Walk toward each other

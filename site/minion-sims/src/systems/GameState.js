@@ -14,7 +14,7 @@ class GameStateManager {
       'overalls', 'default-goggles-1', 'default-goggles-2', 'overalls-bottom',
     ]);
     this.unlockedActions = new Set([
-      'kiss', 'highfive', 'feed', 'nap', 'dress-up', 'send-to-factory',
+      'kiss', 'highfive', 'feed', 'nap', 'wake-up', 'dress-up', 'send-to-factory',
       'recall-from-factory', 'send-to-lab', 'send-to-yard',
       'tickle', 'scold', 'procreate', 'argue', 'gift-banana',
     ]);
@@ -82,6 +82,7 @@ class GameStateManager {
       skinTone: props.skinTone || '#FFD93D',
       heterochromia: props.heterochromia || false,
       pinned: false,
+      pos: props.pos || null,
     };
     this.minions.push(minion);
     this.emit('minion-added', minion);
@@ -189,10 +190,17 @@ class GameStateManager {
     this.emit('minion-energy-changed', { id, energy: m.energy });
   }
 
+  setMinionPos(id, x, y) {
+    const m = this.getMinion(id);
+    if (!m) return;
+    m.pos = { x, y };
+  }
+
   setMinionArea(id, area) {
     const m = this.getMinion(id);
     if (!m || m.area === area) return;
     m.area = area;
+    m.pos = null;
     this.emit('minion-moved', m);
   }
 
@@ -256,11 +264,13 @@ class GameStateManager {
     ]);
     this.unlockedActions = new Set(data.unlockedActions ?? []);
     if (this.unlockedActions.size === 0) {
-      ['kiss', 'highfive', 'feed', 'nap', 'dress-up', 'send-to-factory',
+      ['kiss', 'highfive', 'feed', 'nap', 'wake-up', 'dress-up', 'send-to-factory',
        'recall-from-factory', 'send-to-lab', 'send-to-yard',
        'tickle', 'scold', 'procreate', 'argue', 'gift-banana',
       ].forEach(a => this.unlockedActions.add(a));
     }
+    // Ensure wake-up is available for older saves
+    if (!this.unlockedActions.has('wake-up')) this.unlockedActions.add('wake-up');
     this.settings = {
       musicVolume: 70, sfxVolume: 80, showMoodBubbles: true,
       showNameLabels: true, gameSpeed: 1, ...(data.settings ?? {}),
