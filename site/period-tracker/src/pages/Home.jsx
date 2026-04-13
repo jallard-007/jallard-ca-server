@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { getUser, getCycleDay, getPhaseForDay, PHASES, CYCLE_LENGTH } from '../state.js';
+import { getCycleDay, getPhaseForDay, PHASES, CYCLE_LENGTH } from '../state.js';
 import { navigate } from '../App.jsx';
 
 // SVG constants
@@ -23,7 +23,7 @@ function getDayRange(phaseIdx) {
     return `${start}–${start + PHASES[phaseIdx].days - 1}`;
 }
 
-function CycleTimeline({ cycleDay, onPhaseClick }) {
+function CycleTimeline({ cycleDay, onPhaseClick, initial }) {
     const [tooltip, setTooltip] = useState(null); // { idx, x, y }
     const svgRef = useRef(null);
     const containerRectRef = useRef(null);
@@ -41,8 +41,6 @@ function CycleTimeline({ cycleDay, onPhaseClick }) {
 
     const userAngle = ((cycleDay - 1) / CYCLE_LENGTH) * 360;
     const markerPos = polarToXY(userAngle, R);
-    const user = getUser();
-    const initial = (user?.name || '?')[0].toUpperCase();
 
     return (
         <div className="relative flex justify-center">
@@ -71,6 +69,8 @@ function CycleTimeline({ cycleDay, onPhaseClick }) {
                             aria-label={`${phase.label} phase`}
                             onClick={() => onPhaseClick(idx)}
                             onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onPhaseClick(idx); } }}
+                            onFocus={() => setTooltip({ idx, x: emojiPos.x, y: emojiPos.y - R })}
+                            onBlur={() => setTooltip(null)}
                             onMouseEnter={e => {
                                 containerRectRef.current = svgRef.current?.parentElement?.getBoundingClientRect() || { left: 0, top: 0 };
                                 const rect = containerRectRef.current;
@@ -120,19 +120,17 @@ function CycleTimeline({ cycleDay, onPhaseClick }) {
             </svg>
 
             {/* Tooltip */}
-            {tooltip && (() => {
-                const p = PHASES[tooltip.idx];
-                return (
-                    <div
-                        className="absolute z-20 bg-white border border-gray-100 rounded-xl shadow-lg px-3 py-2 text-sm max-w-48 pointer-events-none"
-                        style={{ left: tooltip.x + 12, top: tooltip.y - 40 }}
-                    >
-                        <strong style={{ color: p.color }}>{p.emoji} {p.label}</strong>
-                        <br />
-                        <span className="text-gray-500">{p.summary}</span>
-                    </div>
-                );
-            })()}
+            {tooltip && (
+                <div
+                    role="tooltip"
+                    className="absolute z-20 bg-white border border-gray-100 rounded-xl shadow-lg px-3 py-2 text-sm max-w-48 pointer-events-none"
+                    style={{ left: tooltip.x + 12, top: tooltip.y - 40 }}
+                >
+                    <strong style={{ color: PHASES[tooltip.idx].color }}>{PHASES[tooltip.idx].emoji} {PHASES[tooltip.idx].label}</strong>
+                    <br />
+                    <span className="text-gray-500">{PHASES[tooltip.idx].summary}</span>
+                </div>
+            )}
         </div>
     );
 }
@@ -149,7 +147,7 @@ function PhaseDetailPanel({ phaseIdx, onClose }) {
                 </div>
                 <button
                     onClick={onClose}
-                    aria-label="Close"
+                    aria-label={`Close ${p.label} phase details`}
                     className="text-gray-400 hover:text-gray-600 text-lg px-2 py-1 rounded-lg hover:bg-gray-100 transition-colors"
                 >✕</button>
             </div>
@@ -166,17 +164,19 @@ function PhaseDetailPanel({ phaseIdx, onClose }) {
     );
 }
 
-export default function Home() {
-    const user = getUser();
+export default function Home({ user }) {
     const cycleDay = user ? getCycleDay() : null;
 
     const [expandedPhaseIdx, setExpandedPhaseIdx] = useState(null);
 
+    const isLoggedIn = user?.loggedIn;
+    const userName = user?.name;
+
     // Redirect in effect to avoid mutating location during render (React StrictMode safe)
     useEffect(() => {
-        if (!user) navigate('/login');
-        else if (!user.name) navigate('/setup');
-    }, [user]);
+        if (!isLoggedIn) navigate('/login');
+        else if (!userName) navigate('/setup');
+    }, [isLoggedIn, userName]);
 
     if (!user || !cycleDay) return null;
 
@@ -220,7 +220,7 @@ export default function Home() {
                 <section className="mt-6">
                     <h2 className="text-sm font-bold text-gray-700 uppercase tracking-wider px-4 mb-3">Your Cycle</h2>
                     <div className="px-4">
-                        <CycleTimeline cycleDay={cycleDay} onPhaseClick={handlePhaseClick} />
+                        <CycleTimeline cycleDay={cycleDay} onPhaseClick={handlePhaseClick} initial={initial} />
                     </div>
                 </section>
 

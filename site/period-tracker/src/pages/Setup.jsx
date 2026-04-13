@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { getUser, updateProfile, clearUser } from '../state.js';
 import { navigate } from '../App.jsx';
+import { ErrorMsg } from '../components/Feedback.jsx';
 
 export default function Setup() {
     const existing = getUser();
@@ -52,11 +53,7 @@ export default function Setup() {
                         />
                     </div>
 
-                    {error && (
-                        <div className="px-4 py-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
-                            {error}
-                        </div>
-                    )}
+                    <ErrorMsg>{error}</ErrorMsg>
 
                     <button type="submit" disabled={loading} className="btn-primary disabled:opacity-60">
                         {loading ? 'Saving…' : "Let's go 🌸"}

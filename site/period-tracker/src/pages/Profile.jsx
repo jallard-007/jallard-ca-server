@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { getUser, clearUser, getCycleDay, getPhaseForDay, PHASES, updateProfile, changePassword } from '../state.js';
 import { navigate } from '../App.jsx';
+import { ErrorMsg, SuccessMsg } from '../components/Feedback.jsx';
 
 export default function Profile() {
     const user = getUser();
@@ -147,16 +148,10 @@ export default function Profile() {
                         </ProfileField>
                     </div>
 
-                    {error && (
-                        <div className="px-4 py-3 bg-red-50 border border-red-200 rounded-xl text-red-700 text-sm mb-4">
-                            {error}
-                        </div>
-                    )}
-                    {success && (
-                        <div className="px-4 py-3 bg-green-50 border border-green-200 rounded-xl text-green-700 text-sm mb-4">
-                            Changes saved!
-                        </div>
-                    )}
+                    <div className="flex flex-col gap-4 mb-4">
+                        <ErrorMsg>{error}</ErrorMsg>
+                        <SuccessMsg>{success && 'Changes saved!'}</SuccessMsg>
+                    </div>
 
                     <button type="submit" disabled={loading} className="btn-primary disabled:opacity-60">
                         {loading ? 'Saving…' : 'Save changes'}

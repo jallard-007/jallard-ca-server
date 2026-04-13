@@ -79,7 +79,7 @@ export default function App() {
     switch (route) {
         case '/login':   return <Login />;
         case '/setup':   return <Setup />;
-        case '/':        return <Home />;
+        case '/':        return <Home user={user} />;
         case '/profile': return <Profile />;
         default:         return <Login />;
     }

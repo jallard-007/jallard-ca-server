@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { login, register } from '../state.js';
 import { navigate } from '../App.jsx';
+import { ErrorMsg } from '../components/Feedback.jsx';
 
 export default function Login() {
     const [email, setEmail] = useState('');
@@ -121,14 +122,6 @@ function Field({ label, htmlFor, children }) {
     return (
         <div className="flex flex-col gap-1.5">
             <label htmlFor={htmlFor} className="text-xs font-semibold text-gray-500 uppercase tracking-wider">{label}</label>
-            {children}
-        </div>
-    );
-}
-
-function ErrorMsg({ children }) {
-    return (
-        <div className="px-4 py-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
             {children}
         </div>
     );
