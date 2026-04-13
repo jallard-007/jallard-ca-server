@@ -5,8 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
-    "build:prod": "vite build --outDir ../../prod/bunny-garden",
+    "build": "vite build --mode development",
+    "build:prod": "vite build --mode production --outDir ../../prod/bunny-garden",
     "preview": "vite preview"
   },
   "dependencies": {
