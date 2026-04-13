@@ -12,7 +12,7 @@ import (
 	"strings"
 	"time"
 
-	"jallard.com/server/api"
+	"github.com/jallard-007/jallard-ca-server/api"
 )
 
 type contextKey int
