@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"path"
 	"path/filepath"
 	"strings"
 
@@ -66,7 +67,10 @@ func MountOnMux(mux *http.ServeMux, siteName string, site *Site) {
 	prefix := "/api/" + siteName
 	mux.Handle(prefix+"/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Rewrite path: /api/{site}/foo → /api/foo
-		r.URL.Path = "/api" + strings.TrimPrefix(r.URL.Path, prefix)
+		// path.Clean handles any traversal attempts for defense in depth
+		// (Go's ServeMux already cleans paths before routing).
+		cleaned := path.Clean(strings.TrimPrefix(r.URL.Path, prefix))
+		r.URL.Path = "/api" + cleaned
 		r.URL.RawPath = ""
 		site.Handler.ServeHTTP(w, r)
 	}))

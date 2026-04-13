@@ -43,10 +43,16 @@ export default function Profile() {
             await updateProfile({ name: name.trim(), birthday });
 
             if (password) {
-                await changePassword(oldPassword, password);
-                setOldPassword('');
-                setPassword('');
-                setConfirm('');
+                try {
+                    await changePassword(oldPassword, password);
+                    setOldPassword('');
+                    setPassword('');
+                    setConfirm('');
+                } catch (pwErr) {
+                    const msg = pwErr?.response?.data?.message || pwErr?.message || 'Password change failed.';
+                    setError('Profile saved, but password change failed: ' + msg);
+                    return;
+                }
             }
 
             setSuccess(true);
