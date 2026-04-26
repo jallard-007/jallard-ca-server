@@ -1,6 +1,7 @@
 # binaries
 /bunny-garden
 /minion-sims
+/minion-api
 /periodt
 
 # frontend stuff
@@ -10,3 +11,4 @@ node_modules/
 # misc
 /nohup.out
 *.out
+pb_data/

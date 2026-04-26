@@ -1,11 +1,14 @@
-.PHONY: all minion bunny periodt
+.PHONY: all minion minion-api bunny periodt 
 
-all: minion bunny periodt
+all:
 
 minion:
 	cd sites/minion-sims/frontend && npm run build
 	rsync --delete -r sites/minion-sims/frontend/dist server/frontend/
 	go build -o minion-sims ./cmd/file-srv
+
+minion-api:
+	go build -o minion-api ./cmd/minion-sims-api
 
 bunny:
 	cd sites/bunny-garden/frontend && npm run build
