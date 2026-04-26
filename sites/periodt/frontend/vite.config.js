@@ -8,13 +8,15 @@ const ALREADY_COMPRESSED = /\.(png|jpe?g|webp|gif|avif|woff2|mp3|ogg|aac|flac|wa
 export default defineConfig(({ mode }) => {
     return {
         plugins:[
+            tailwindcss(),
+            react(),
             compression({ algorithm: 'gzip', exclude: ALREADY_COMPRESSED }),
             compression({ algorithm: 'brotliCompress', exclude: ALREADY_COMPRESSED }),
         ],
         server: {
             port: 5173,
             proxy: {
-                '/api/': 'http://localhost:8080',
+                '/api/': 'http://localhost:8066',
             },
         },
     };

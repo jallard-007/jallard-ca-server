@@ -6,12 +6,8 @@ import Setup from './pages/Setup.jsx';
 import Home from './pages/Home.jsx';
 import Profile from './pages/Profile.jsx';
 
-const BASE = '/period-tracker';
-
 function getPath() {
-    const p = window.location.pathname;
-    const rel = p.startsWith(BASE) ? p.slice(BASE.length) : '/';
-    return rel || '/';
+    return window.location.pathname || '/';
 }
 
 const ROUTES = ['/', '/login', '/setup', '/profile'];
@@ -27,7 +23,7 @@ function resolveRoute(path, user) {
 }
 
 export function navigate(path) {
-    window.history.pushState(null, '', BASE + path);
+    window.history.pushState(null, '', path);
     window.dispatchEvent(new PopStateEvent('popstate'));
 }
 
@@ -69,7 +65,7 @@ export default function App() {
         if (!route) return;
         const current = getPath();
         if (route !== current) {
-            window.history.replaceState(null, '', BASE + route);
+            window.history.replaceState(null, '', route);
             setPath(route);
         }
     }, [route, path]);

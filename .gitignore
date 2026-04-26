@@ -1,8 +1,9 @@
-# binaries
-/bunny-garden
-/minion-sims
-/minion-api
-/periodt
+# binaries and data
+/bunny*
+/minion*
+/periodt*
+/prod
+/dev
 
 # frontend stuff
 dist/
